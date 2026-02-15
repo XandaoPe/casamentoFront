@@ -32,7 +32,7 @@ const AdminGuestsPage: React.FC = () => {
         deleteGuest,
         refreshGuests
     } = useGuests();
-    const { sending, sendEmail, sendSms, getWhatsAppLink, sendBulk } = useInvitations();
+    const { sending, sendEmail, sendSms, sendWhatsApp, sendBulk } = useInvitations();
     const navigate = useNavigate();
 
     // Estados
@@ -87,6 +87,33 @@ const AdminGuestsPage: React.FC = () => {
         currentPage * itemsPerPage
     );
 
+    const handleSendEmail = async (guest: Guest) => {
+        try {
+            await sendEmail(guest._id);
+            await refreshGuests();
+        } catch (error) {
+            // Erro já tratado no hook
+        }
+    };
+
+    const handleSendSms = async (guest: Guest) => {
+        try {
+            await sendSms(guest._id);
+            await refreshGuests();
+        } catch (error) {
+            // Erro já tratado no hook
+        }
+    };
+
+    const handleSendWhatsApp = async (guest: Guest) => {
+        try {
+            await sendWhatsApp(guest._id);
+            await refreshGuests();
+        } catch (error) {
+            // Erro já tratado no hook
+        }
+    };
+
     const handleOpenModal = (guest?: Guest) => {
         setEditingGuest(guest || null);
         setShowModal(true);
@@ -120,25 +147,6 @@ const AdminGuestsPage: React.FC = () => {
             } catch (error) {
                 // Erro já tratado no hook
             }
-        }
-    };
-
-    const handleSendInvitation = async (guest: Guest, method: 'email' | 'sms' | 'whatsapp') => {
-        try {
-            switch (method) {
-                case 'email':
-                    await sendEmail(guest._id);
-                    break;
-                case 'sms':
-                    await sendSms(guest._id);
-                    break;
-                case 'whatsapp':
-                    await getWhatsAppLink(guest._id);
-                    break;
-            }
-            await refreshGuests();
-        } catch (error) {
-            // Erro já tratado no hook
         }
     };
 
@@ -285,7 +293,10 @@ const AdminGuestsPage: React.FC = () => {
                     onViewDetails={handleViewDetails}
                     onEdit={handleOpenModal}
                     onDelete={handleDelete}
-                    onSendInvitation={handleSendInvitation}
+                    // ✅ Novas props
+                    onSendEmail={handleSendEmail}
+                    onSendSms={handleSendSms}
+                    onSendWhatsApp={handleSendWhatsApp}
                     sending={sending}
                 />
 

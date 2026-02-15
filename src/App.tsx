@@ -7,9 +7,8 @@ import PrivateRoute from './components/Admin/PrivateRoute';
 import InvitePage from './pages/InvitePage';
 import AdminLoginPage from './pages/AdminLoginPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
-// import AdminGuestsPage from './pages/AdminGuestsPage'; // Vamos criar depois
-import NotFoundPage from './pages/NotFoundPage';
 import AdminGuestsPage from './pages/AdminGuestsPage';
+import NotFoundPage from './pages/NotFoundPage';
 
 const App: React.FC = () => {
   return (
@@ -27,7 +26,7 @@ const App: React.FC = () => {
         />
 
         <Routes>
-          {/* Rota pública - convite */}
+          {/* ✅ ROTA PÚBLICA DO CONVITE - DEVE SER PRIMEIRA */}
           <Route path="/invite/:token" element={<InvitePage />} />
 
           {/* Rotas administrativas */}
@@ -49,7 +48,10 @@ const App: React.FC = () => {
             }
           />
 
+          {/* Redirecionamentos */}
           <Route path="/" element={<Navigate to="/admin/login" replace />} />
+
+          {/* Rota 404 - DEVE SER A ÚLTIMA */}
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </AuthProvider>

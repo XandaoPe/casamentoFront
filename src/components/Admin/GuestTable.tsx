@@ -22,7 +22,10 @@ interface GuestTableProps {
     onViewDetails: (guest: Guest) => void;
     onEdit: (guest: Guest) => void;
     onDelete: (id: string) => void;
-    onSendInvitation: (guest: Guest, method: 'email' | 'sms' | 'whatsapp') => void;
+    // ✅ Separar os métodos
+    onSendEmail: (guest: Guest) => void;
+    onSendSms: (guest: Guest) => void;
+    onSendWhatsApp: (guest: Guest) => void;
     sending: boolean;
 }
 
@@ -35,7 +38,9 @@ const GuestTable: React.FC<GuestTableProps> = ({
     onViewDetails,
     onEdit,
     onDelete,
-    onSendInvitation,
+    onSendEmail,
+    onSendSms,
+    onSendWhatsApp,
     sending
 }) => {
     if (loading) {
@@ -159,7 +164,7 @@ const GuestTable: React.FC<GuestTableProps> = ({
                                         <EyeIcon className="h-5 w-5" />
                                     </button>
                                     <button
-                                        onClick={() => onSendInvitation(guest, 'whatsapp')}
+                                        onClick={() => onSendWhatsApp(guest)} // ✅ Chamar método específico
                                         disabled={sending}
                                         className="p-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors disabled:opacity-50"
                                         title="Enviar WhatsApp"
@@ -167,7 +172,7 @@ const GuestTable: React.FC<GuestTableProps> = ({
                                         <ChatBubbleLeftRightIcon className="h-5 w-5" />
                                     </button>
                                     <button
-                                        onClick={() => onSendInvitation(guest, 'email')}
+                                        onClick={() => onSendEmail(guest)} // ✅ Chamar método específico
                                         disabled={sending}
                                         className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors disabled:opacity-50"
                                         title="Enviar Email"
@@ -175,7 +180,7 @@ const GuestTable: React.FC<GuestTableProps> = ({
                                         <EnvelopeIcon className="h-5 w-5" />
                                     </button>
                                     <button
-                                        onClick={() => onSendInvitation(guest, 'sms')}
+                                        onClick={() => onSendSms(guest)} // ✅ Chamar método específico
                                         disabled={sending}
                                         className="p-1 text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded transition-colors disabled:opacity-50"
                                         title="Enviar SMS"

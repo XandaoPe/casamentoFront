@@ -34,16 +34,30 @@ export const useInvitations = () => {
         }
     };
 
-    const getWhatsAppLink = async (guestId: string) => {
+    const sendWhatsApp = async (guestId: string) => {
+        setSending(true);
         try {
             const response = await invitationsService.getWhatsAppLink(guestId);
-            // Abre o link do WhatsApp em nova aba
+
+            // Abre o WhatsApp Web com a mensagem pronta
             window.open(response.data.whatsappUrl, '_blank');
-            toast.success('Link do WhatsApp gerado!');
+
+            // Toast simples sem JSX complexo para evitar erros
+            toast.success('✅ WhatsApp aberto! Agora é só clicar em ENVIAR.', {
+                duration: 5000
+            });
+
+            // Mostra o link em um segundo toast
+            toast.success(`🔗 Link: ${response.data.inviteLink}`, {
+                duration: 8000
+            });
+
             return response.data;
         } catch (err: any) {
             toast.error(err.response?.data?.message || 'Erro ao gerar link do WhatsApp');
             throw err;
+        } finally {
+            setSending(false);
         }
     };
 
@@ -68,7 +82,7 @@ export const useInvitations = () => {
         sending,
         sendEmail,
         sendSms,
-        getWhatsAppLink,
+        sendWhatsApp,
         sendBulk,
     };
 };
