@@ -15,7 +15,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ nomeConvidado, dataEvento }) 
             <div
                 className="absolute inset-0 bg-cover bg-center bg-no-repeat"
                 style={{
-                    backgroundImage: 'url("/images/casamento-hero.jpg")',
+                    backgroundImage: 'url("/images/fundo.jpg")',
                 }}
             >
                 <div className="absolute inset-0 bg-black/40" />

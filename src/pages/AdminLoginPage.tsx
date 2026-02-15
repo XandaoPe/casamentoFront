@@ -1,34 +1,50 @@
-// src/pages/AdminLoginPage.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LockClosedIcon, UserIcon } from '@heroicons/react/24/outline';
+import { LockClosedIcon, UserIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 
 const AdminLoginPage: React.FC = () => {
     const [username, setUsername] = useState<string>('');
     const [password, setPassword] = useState<string>('');
     const [loading, setLoading] = useState<boolean>(false);
+    const [showWakeUpMessage, setShowWakeUpMessage] = useState<boolean>(false);
+    
     const { signIn } = useAuth();
     const navigate = useNavigate();
+
+    // Efeito para mostrar a mensagem de "acordar servidor" após 3 segundos de espera
+    useEffect(() => {
+        let timer: NodeJS.Timeout;
+        if (loading) {
+            timer = setTimeout(() => {
+                setShowWakeUpMessage(true);
+            }, 3000); // Aparece após 3 segundos de loading
+        } else {
+            setShowWakeUpMessage(false);
+        }
+        return () => clearTimeout(timer);
+    }, [loading]);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
         e.preventDefault();
         setLoading(true);
 
-        const success = await signIn(username, password);
-
-        if (success) {
-            navigate('/admin/dashboard');
+        try {
+            const success = await signIn(username, password);
+            if (success) {
+                navigate('/admin/dashboard');
+            }
+        } catch (error) {
+            console.error('Erro ao fazer login:', error);
+        } finally {
+            setLoading(false);
         }
-
-        setLoading(false);
     };
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-rose-50 to-white flex items-center justify-center p-4">
             <div className="max-w-md w-full">
-                {/* Card de Login */}
                 <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
                     {/* Cabeçalho */}
                     <div className="bg-gold py-6 px-8 text-center">
@@ -38,6 +54,23 @@ const AdminLoginPage: React.FC = () => {
 
                     {/* Formulário */}
                     <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-6">
+                        {/* Mensagem de Cold Start do Render */}
+                        {showWakeUpMessage && (
+                            <div className="bg-blue-50 border-l-4 border-blue-400 p-4 animate-pulse">
+                                <div className="flex">
+                                    <div className="flex-shrink-0">
+                                        <InformationCircleIcon className="h-5 w-5 text-blue-400" />
+                                    </div>
+                                    <div className="ml-3">
+                                        <p className="text-xs text-blue-700 font-medium uppercase leading-tight">
+                                            Aguarde que nossos servidores estão processando sua requisição. 
+                                            Isso poderá levar até 1 min.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="space-y-2">
                             <label htmlFor="username" className="block text-sm font-medium text-gray-700">
                                 Usuário
@@ -79,12 +112,12 @@ const AdminLoginPage: React.FC = () => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                         >
                             {loading ? (
                                 <span className="flex items-center justify-center">
                                     <LoadingSpinner size="small" color="white" />
-                                    <span className="ml-2">Entrando...</span>
+                                    <span className="ml-2">Processando...</span>
                                 </span>
                             ) : (
                                 'Entrar'
@@ -92,7 +125,6 @@ const AdminLoginPage: React.FC = () => {
                         </button>
                     </form>
 
-                    {/* Rodapé */}
                     <div className="bg-gray-50 px-6 py-4 text-center">
                         <p className="text-xs text-gray-500">
                             Acesso restrito apenas para administradores
@@ -103,5 +135,4 @@ const AdminLoginPage: React.FC = () => {
         </div>
     );
 };
-
 export default AdminLoginPage;
