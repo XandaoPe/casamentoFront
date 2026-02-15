@@ -62,11 +62,22 @@ const InvitePage: React.FC = () => {
     }, [loadInvite, loadGifts, loadMenu]);
 
     const handleConfirmPresence = async (data: any) => {
+        console.log('Token:', token); // Verificar se o token existe
+        console.log('Dados enviados:', data); // Verificar os dados
+
+        if (!token) {
+            toast.error('Token inválido');
+            return;
+        }
+
         try {
-            await api.post(`/guests/confirm/${token}`, data);
+            const response = await api.post(`/guests/confirm/${token}`, data);
+            console.log('Resposta:', response.data);
             toast.success('Presença confirmada com sucesso! 🎉');
             await loadInvite();
         } catch (error: any) {
+            console.error('Erro completo:', error);
+            console.error('Resposta do erro:', error.response?.data);
             toast.error(error.response?.data?.message || 'Erro ao confirmar');
         }
     };

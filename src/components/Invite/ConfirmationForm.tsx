@@ -20,10 +20,13 @@ const ConfirmationForm: React.FC<ConfirmationFormProps> = ({ onSubmit, onCancel 
         try {
             const dataToSend = {
                 confirmado: formData.confirmado,
-                numAcompanhantes: 0, // Fixo em 0 já que não teremos acompanhantes
+                numAcompanhantes: 0,
                 mensagem: formData.mensagem
             };
+            console.log('Enviando dados:', dataToSend); // Debug
             await onSubmit(dataToSend);
+        } catch (error) {
+            console.error('Erro no formulário:', error);
         } finally {
             setSubmitting(false);
         }
