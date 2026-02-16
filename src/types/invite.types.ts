@@ -6,6 +6,7 @@ export interface Acompanhante {
 }
 
 export interface PresenteCota {
+    _id: string;
     id: string;
     nome: string;
     descricao: string;

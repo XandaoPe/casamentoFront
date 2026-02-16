@@ -9,7 +9,7 @@ interface GiftListSectionProps {
 }
 
 const GiftListSection: React.FC<GiftListSectionProps> = ({ presentes, onComprarCota }) => {
-    const [selectedGift, setSelectedGift] = useState<PresenteCota | null>(null);
+    const [selectedGift, setSelectedGift] = useState<any | null>(null);
     const [quantidade, setQuantidade] = useState(1);
 
     const handleComprar = () => {
@@ -35,16 +35,22 @@ const GiftListSection: React.FC<GiftListSectionProps> = ({ presentes, onComprarC
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-                    {presentes.map((presente) => {
-                        const total = presente.cotasCompradas + presente.cotasDisponiveis;
-                        const percentualComprado = total > 0 ? (presente.cotasCompradas / total) * 100 : 0;
+                    {presentes.map((presente: any) => {
+                        // CÁLCULOS SEGUROS BASEADOS NOS DADOS REAIS DO MONGODB
+                        const vTotal = presente.valorTotal || 0;
+                        const tCotas = presente.totalCotas || 1;
+                        const cVendidas = presente.cotasVendidas || 0;
+
+                        const valorUnitarioCota = vTotal / tCotas;
+                        const disponiveis = Math.max(0, tCotas - cVendidas);
+                        const percentualComprado = (cVendidas / tCotas) * 100;
 
                         return (
-                            <div key={presente.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col h-full overflow-hidden hover:shadow-md transition-shadow">
-                                {presente.imagem && (
+                            <div key={presente._id || presente.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col h-full overflow-hidden hover:shadow-md transition-shadow">
+                                {presente.imagemUrl && (
                                     <div className="aspect-video w-full overflow-hidden">
                                         <img
-                                            src={presente.imagem}
+                                            src={presente.imagemUrl}
                                             alt={presente.nome}
                                             className="w-full h-full object-cover"
                                         />
@@ -54,21 +60,20 @@ const GiftListSection: React.FC<GiftListSectionProps> = ({ presentes, onComprarC
                                     <h3 className="text-lg font-bold text-gray-800 mb-1 leading-tight">
                                         {presente.nome}
                                     </h3>
-                                    <p className="text-gray-500 text-sm mb-4 flex-grow line-clamp-2">
-                                        {presente.descricao}
-                                    </p>
 
-                                    <div className="space-y-3 mb-5">
+                                    <div className="space-y-3 mb-5 mt-4">
                                         <div className="flex justify-between items-end">
-                                            <span className="text-xs text-gray-400 uppercase font-bold tracking-wider">Cota unitária</span>
+                                            <span className="text-xs text-gray-400 uppercase font-bold tracking-wider">
+                                                {presente.temCotas ? 'Cota unitária' : 'Valor Total'}
+                                            </span>
                                             <span className="font-bold text-gold text-lg">
-                                                R$ {presente.valorCota.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                R$ {valorUnitarioCota.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                             </span>
                                         </div>
 
                                         <div className="space-y-1.5">
                                             <div className="flex justify-between text-xs font-medium">
-                                                <span className="text-gray-500">{presente.cotasDisponiveis} disponíveis</span>
+                                                <span className="text-gray-500">{disponiveis} disponíveis</span>
                                                 <span className="text-gold">{percentualComprado.toFixed(0)}%</span>
                                             </div>
                                             <div className="w-full bg-gray-100 rounded-full h-2">
@@ -82,22 +87,15 @@ const GiftListSection: React.FC<GiftListSectionProps> = ({ presentes, onComprarC
 
                                     <div className="flex gap-2">
                                         <button
+                                            disabled={disponiveis === 0}
                                             onClick={() => { setSelectedGift(presente); setQuantidade(1); }}
-                                            className="flex-grow btn-primary py-2.5 text-sm"
+                                            className={`flex-grow py-2.5 text-sm font-bold rounded-xl transition-all ${disponiveis === 0
+                                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                    : 'bg-gold hover:bg-gold/90 text-white shadow-sm'
+                                                }`}
                                         >
-                                            Presentear
+                                            {disponiveis === 0 ? 'Esgotado' : 'Presentear'}
                                         </button>
-                                        {presente.linkExterno && (
-                                            <a
-                                                href={presente.linkExterno}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="btn-secondary px-3 py-2.5"
-                                                title="Ver na loja"
-                                            >
-                                                <ShoppingBagIcon className="h-5 w-5" />
-                                            </a>
-                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -105,7 +103,7 @@ const GiftListSection: React.FC<GiftListSectionProps> = ({ presentes, onComprarC
                     })}
                 </div>
 
-                {/* Modal de Compra - Mobile Friendly */}
+                {/* Modal de Compra */}
                 {selectedGift && (
                     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
                         <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl animate-slide-up">
@@ -122,7 +120,10 @@ const GiftListSection: React.FC<GiftListSectionProps> = ({ presentes, onComprarC
                                         <p className="text-xs text-gray-500 uppercase font-bold">Item selecionado</p>
                                         <p className="font-semibold text-gray-800">{selectedGift.nome}</p>
                                     </div>
-                                    <p className="font-bold text-gold">R$ {selectedGift.valorCota.toFixed(2)}</p>
+                                    {/* CÁLCULO DO VALOR UNITÁRIO NO MODAL */}
+                                    <p className="font-bold text-gold">
+                                        R$ {(selectedGift.valorTotal / selectedGift.totalCotas).toFixed(2)}
+                                    </p>
                                 </div>
 
                                 <div>
@@ -131,17 +132,19 @@ const GiftListSection: React.FC<GiftListSectionProps> = ({ presentes, onComprarC
                                     </label>
                                     <div className="flex items-center gap-4">
                                         <button
+                                            type="button"
                                             onClick={() => setQuantidade(Math.max(1, quantidade - 1))}
                                             className="w-12 h-12 rounded-full border-2 border-gray-200 flex items-center justify-center text-2xl font-bold text-gray-600 active:bg-gray-100"
                                         >-</button>
-                                        <input
-                                            type="number"
-                                            readOnly
-                                            value={quantidade}
-                                            className="flex-grow text-center text-xl font-bold border-none bg-transparent"
-                                        />
+                                        <span className="flex-grow text-center text-xl font-bold text-gray-800">
+                                            {quantidade}
+                                        </span>
                                         <button
-                                            onClick={() => setQuantidade(Math.min(selectedGift.cotasDisponiveis, quantidade + 1))}
+                                            type="button"
+                                            onClick={() => {
+                                                const max = selectedGift.totalCotas - selectedGift.cotasVendidas;
+                                                setQuantidade(Math.min(max, quantidade + 1));
+                                            }}
                                             className="w-12 h-12 rounded-full border-2 border-gray-200 flex items-center justify-center text-2xl font-bold text-gray-600 active:bg-gray-100"
                                         >+</button>
                                     </div>
@@ -150,11 +153,15 @@ const GiftListSection: React.FC<GiftListSectionProps> = ({ presentes, onComprarC
                                 <div className="border-t pt-4">
                                     <div className="flex justify-between items-center mb-6">
                                         <span className="text-gray-600 font-medium">Total do Presente:</span>
+                                        {/* CÁLCULO DO TOTAL SEM NaN */}
                                         <span className="text-2xl font-black text-gray-900">
-                                            R$ {(selectedGift.valorCota * quantidade).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                            R$ {((selectedGift.valorTotal / selectedGift.totalCotas) * quantidade).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                         </span>
                                     </div>
-                                    <button onClick={handleComprar} className="w-full btn-primary">
+                                    <button
+                                        onClick={handleComprar}
+                                        className="w-full bg-gold hover:bg-gold/90 text-white py-4 rounded-xl font-bold text-lg shadow-lg transition-all"
+                                    >
                                         Confirmar Presente
                                     </button>
                                 </div>

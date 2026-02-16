@@ -8,7 +8,6 @@ import { PresenteCota, CardapioItem } from '../types/invite.types';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import { InformationCircleIcon } from '@heroicons/react/24/outline';
 
-// Componentes
 import HeroSection from '../components/Invite/HeroSection';
 import CountdownSection from '../components/Invite/CountdownSection';
 import LoveStorySection from '../components/Invite/LoveStorySection';
@@ -27,10 +26,8 @@ const InvitePage: React.FC = () => {
     const [presentes, setPresentes] = useState<PresenteCota[]>([]);
     const [cardapio, setCardapio] = useState<CardapioItem[]>([]);
 
-    // Data do Evento Definida: 21 de Novembro de 2026
     const EVENT_DATE = "2026-11-21T19:00:00";
 
-    // Efeito para o cronômetro do servidor (Cold Start)
     useEffect(() => {
         let timer: NodeJS.Timeout;
         if (loading) {
@@ -95,21 +92,35 @@ const InvitePage: React.FC = () => {
     };
 
     const handleBuyGift = async (giftId: string, quantidade: number) => {
-        try {
-            const response = await api.post('/gifts/buy', { giftId, quantidade });
+        // Correção para evitar o 'null' enviado no POST
+        const qtdFinal = Number(quantidade) || 1;
 
-            // Atualiza o estado local do guest para mostrar o que ele escolheu
+        if (!giftId) {
+            toast.error('ID do presente inválido');
+            return;
+        }
+
+        try {
+            // Rota alterada para 'buy' conforme ajuste no Controller
+            const response = await api.post('/gifts/buy', {
+                giftId: giftId,
+                quantidade: qtdFinal
+            });
+
+            // Atualiza o estado local do guest
             setGuest(prev => prev ? {
                 ...prev,
                 presenteSelecionado: {
                     presenteId: giftId,
                     nome: response.data.nome,
-                    valor: response.data.valorCota * quantidade,
-                    quantidade: quantidade
+                    // Cálculo seguro para evitar NaN
+                    valor: (response.data.valorTotal / (response.data.totalCotas || 1)) * qtdFinal,
+                    quantidade: qtdFinal
                 }
             } : null);
 
             toast.success('Ótima escolha! Obrigado pelo presente! 🎁');
+            loadGifts(); // Recarrega cotas
         } catch (error: any) {
             toast.error(error.response?.data?.message || 'Erro ao selecionar presente');
         }
@@ -126,7 +137,7 @@ const InvitePage: React.FC = () => {
                             <span className="font-bold text-sm uppercase tracking-wider">Aviso</span>
                         </div>
                         <p className="text-gray-600 text-sm leading-relaxed">
-                            Segura a ansiedade! 🥂 Estamos conectando você ao nosso grande dia. Como o servidor é gratuito, ele às vezes tira um cochilo, mas já está acordando!
+                            O servidor está acordando para conectar você ao nosso grande dia!
                         </p>
                     </div>
                 )}
@@ -142,6 +153,7 @@ const InvitePage: React.FC = () => {
         );
     }
 
+    // Configurações de seções
     const photos = [
         { url: '/images/noivado.png', caption: 'Nosso noivado' },
         { url: '/images/viagem.png', caption: 'Viagem dos sonhos' },
@@ -154,43 +166,31 @@ const InvitePage: React.FC = () => {
     const ceremony = {
         name: 'Igreja do Evangelho Quadrangular',
         address: 'Rua Minas Gerais, 14-50 - Vila Cruzeiro do Sul, Presidente Epitácio-SP',
-        mapUrl: 'https://maps.google.com/?q=Igreja+do+Evangelho+Quadrangular+Presidente+Epitacio',
+        mapUrl: 'https://maps.google.com',
         time: '19:00'
     };
 
     const party = {
         name: 'Espaço Planet/Planet Kids',
         address: 'Av. Presidente Vargas, 27-07 - Vila Centenario, Presidente Epitácio-SP',
-        mapUrl: 'https://maps.google.com/?q=Espaço+Planet+Presidente+Epitacio',
+        mapUrl: 'https://maps.google.com',
         time: '20:30'
     };
 
     return (
         <div className="min-h-screen bg-white">
-            <HeroSection
-                nomeConvidado={guest.nome}
-                dataEvento={EVENT_DATE}
-            />
-
-            {/* Seção de Contagem Regressiva Atualizada */}
-            <CountdownSection
-                targetDate={EVENT_DATE}
-                title="A contagem regressiva começou..."
-            />
-
+            <HeroSection nomeConvidado={guest.nome} dataEvento={EVENT_DATE} />
+            <CountdownSection targetDate={EVENT_DATE} title="A contagem regressiva começou..." />
             <LoveStorySection />
             <PhotoGallery photos={photos} />
             <LocationMap ceremony={ceremony} party={party} />
 
-            <MenuSection
-                items={cardapio}
-                isSelectable={false}
-                onSelect={(item) => console.log('Selecionado:', item)}
-            />
+            <MenuSection items={cardapio} isSelectable={false} onSelect={() => { }} />
 
             <GiftListSection
                 presentes={presentes}
-                onComprarCota={(gift, qtd) => handleBuyGift(gift.id, qtd)}
+                // Ajuste aqui: usando explicitamente o _id do MongoDB
+                onComprarCota={(gift, qtd) => handleBuyGift(gift._id, qtd)}
             />
 
             <section className="py-16 bg-rose-50">
@@ -202,17 +202,11 @@ const InvitePage: React.FC = () => {
                     {guest.confirmado ? (
                         <div className="bg-white rounded-xl shadow-lg p-8 text-center">
                             <CheckCircleIcon className="h-16 w-16 text-green-500 mx-auto mb-4" />
-                            <h3 className="text-2xl font-semibold text-green-700 mb-2">
-                                Presença Confirmada!
-                            </h3>
-                            <p className="text-gray-600">
-                                Sua presença foi confirmada com sucesso! Te esperamos lá! 🎉
-                            </p>
+                            <h3 className="text-2xl font-semibold text-green-700 mb-2">Presença Confirmada!</h3>
+                            <p className="text-gray-600">Te esperamos lá! 🎉</p>
                         </div>
                     ) : (
-                        <ConfirmationForm
-                            onSubmit={handleConfirmPresence}
-                        />
+                        <ConfirmationForm onSubmit={handleConfirmPresence} />
                     )}
                 </div>
             </section>
