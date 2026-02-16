@@ -1,3 +1,4 @@
+// src/pages/InvitePage.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
@@ -5,7 +6,7 @@ import api from '../services/api';
 import { Guest } from '../types/guest.types';
 import { PresenteCota, CardapioItem } from '../types/invite.types';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
-import { InformationCircleIcon } from '@heroicons/react/24/outline'; // Adicionado ícone
+import { InformationCircleIcon } from '@heroicons/react/24/outline';
 
 // Componentes
 import HeroSection from '../components/Invite/HeroSection';
@@ -22,9 +23,12 @@ const InvitePage: React.FC = () => {
     const { token } = useParams<{ token: string }>();
     const [guest, setGuest] = useState<Guest | null>(null);
     const [loading, setLoading] = useState(true);
-    const [showWakeUpMessage, setShowWakeUpMessage] = useState(false); // Novo estado
+    const [showWakeUpMessage, setShowWakeUpMessage] = useState(false);
     const [presentes, setPresentes] = useState<PresenteCota[]>([]);
     const [cardapio, setCardapio] = useState<CardapioItem[]>([]);
+
+    // Data do Evento Definida: 21 de Novembro de 2026
+    const EVENT_DATE = "2026-11-21T19:00:00";
 
     // Efeito para o cronômetro do servidor (Cold Start)
     useEffect(() => {
@@ -32,7 +36,7 @@ const InvitePage: React.FC = () => {
         if (loading) {
             timer = setTimeout(() => {
                 setShowWakeUpMessage(true);
-            }, 2500); // Se demorar mais de 2.5s, mostra a mensagem
+            }, 2500);
         } else {
             setShowWakeUpMessage(false);
         }
@@ -41,11 +45,6 @@ const InvitePage: React.FC = () => {
 
     const loadInvite = useCallback(async () => {
         if (!token) return;
-
-        // --- ADICIONE ESTA LINHA PARA TESTAR ---
-        // await new Promise(resolve => setTimeout(resolve, 10000));
-        // Isso vai travar a tela em "loading" por 10 segundos
-
         try {
             const response = await api.get(`/guests/invite/${token}`);
             setGuest(response.data);
@@ -87,7 +86,7 @@ const InvitePage: React.FC = () => {
         }
 
         try {
-            const response = await api.post(`/guests/confirm/${token}`, data);
+            await api.post(`/guests/confirm/${token}`, data);
             toast.success('Presença confirmada com sucesso! 🎉');
             await loadInvite();
         } catch (error: any) {
@@ -113,7 +112,6 @@ const InvitePage: React.FC = () => {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-rose-50 px-4 text-center">
                 <LoadingSpinner />
-
                 {showWakeUpMessage && (
                     <div className="mt-8 max-w-sm animate-fade-in">
                         <div className="flex items-center justify-center text-rose-600 mb-2">
@@ -121,13 +119,8 @@ const InvitePage: React.FC = () => {
                             <span className="font-bold text-sm uppercase tracking-wider">Aviso</span>
                         </div>
                         <p className="text-gray-600 text-sm leading-relaxed">
-                            Segura a ansiedade! 🥂 Estamos conectando você ao nosso grande dia. Como o servidor é gratuito, ele às vezes tira um cochilo, mas já está acordando (leva só 1 min)!
+                            Segura a ansiedade! 🥂 Estamos conectando você ao nosso grande dia. Como o servidor é gratuito, ele às vezes tira um cochilo, mas já está acordando!
                         </p>
-                        <div className="mt-4 flex justify-center space-x-1">
-                            <div className="h-1.5 w-1.5 bg-rose-300 rounded-full animate-bounce"></div>
-                            <div className="h-1.5 w-1.5 bg-rose-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                            <div className="h-1.5 w-1.5 bg-rose-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                        </div>
                     </div>
                 )}
             </div>
@@ -154,14 +147,14 @@ const InvitePage: React.FC = () => {
     const ceremony = {
         name: 'Igreja do Evangelho Quadrangular',
         address: 'Rua Minas Gerais, 14-50 - Vila Cruzeiro do Sul, Presidente Epitácio-SP',
-        mapUrl: 'https://maps.app.goo.gl/WDQRfGCdVLQaprVH6',
+        mapUrl: 'https://maps.google.com/?q=Igreja+do+Evangelho+Quadrangular+Presidente+Epitacio',
         time: '19:00'
     };
 
     const party = {
         name: 'Espaço Planet/Planet Kids',
         address: 'Av. Presidente Vargas, 27-07 - Vila Centenario, Presidente Epitácio-SP',
-        mapUrl: 'https://maps.app.goo.gl/Q4AYNt2DvCo4t6pUA',
+        mapUrl: 'https://maps.google.com/?q=Espaço+Planet+Presidente+Epitacio',
         time: '20:30'
     };
 
@@ -169,21 +162,30 @@ const InvitePage: React.FC = () => {
         <div className="min-h-screen bg-white">
             <HeroSection
                 nomeConvidado={guest.nome}
-                dataEvento="2024-12-15T17:00:00"
+                dataEvento={EVENT_DATE}
             />
-            <CountdownSection targetDate="2024-12-15T17:00:00" />
+
+            {/* Seção de Contagem Regressiva Atualizada */}
+            <CountdownSection
+                targetDate={EVENT_DATE}
+                title="A contagem regressiva começou..."
+            />
+
             <LoveStorySection />
             <PhotoGallery photos={photos} />
             <LocationMap ceremony={ceremony} party={party} />
+
             <MenuSection
                 items={cardapio}
                 isSelectable={false}
                 onSelect={(item) => console.log('Selecionado:', item)}
             />
+
             <GiftListSection
                 presentes={presentes}
                 onComprarCota={handleBuyGift}
             />
+
             <section className="py-16 bg-rose-50">
                 <div className="container-custom max-w-2xl">
                     <h2 className="font-script text-3xl md:text-4xl text-center mb-8">
@@ -197,10 +199,7 @@ const InvitePage: React.FC = () => {
                                 Presença Confirmada!
                             </h3>
                             <p className="text-gray-600">
-                                Sua presença foi confirmada com sucesso!
-                            </p>
-                            <p className="text-sm text-gray-500 mt-4">
-                                Te esperamos lá! 🎉
+                                Sua presença foi confirmada com sucesso! Te esperamos lá! 🎉
                             </p>
                         </div>
                     ) : (
