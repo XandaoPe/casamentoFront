@@ -1,13 +1,12 @@
 // src/components/Invite/ConfirmationForm.tsx
 import React, { useState } from 'react';
-import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon, XCircleIcon, ArrowRightIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 
 interface ConfirmationFormProps {
     onSubmit: (data: any) => Promise<void>;
-    onCancel?: () => void;
 }
 
-const ConfirmationForm: React.FC<ConfirmationFormProps> = ({ onSubmit, onCancel }) => {
+const ConfirmationForm: React.FC<ConfirmationFormProps> = ({ onSubmit }) => {
     const [step, setStep] = useState(1);
     const [formData, setFormData] = useState({
         confirmado: true,
@@ -18,134 +17,93 @@ const ConfirmationForm: React.FC<ConfirmationFormProps> = ({ onSubmit, onCancel 
     const handleSubmit = async () => {
         setSubmitting(true);
         try {
-            const dataToSend = {
-                confirmado: formData.confirmado,
-                numAcompanhantes: 0,
-                mensagem: formData.mensagem
-            };
-            console.log('Enviando dados:', dataToSend); // Debug
-            await onSubmit(dataToSend);
-        } catch (error) {
-            console.error('Erro no formulário:', error);
+            await onSubmit({ ...formData, numAcompanhantes: 0 });
         } finally {
             setSubmitting(false);
         }
     };
 
     return (
-        <div className="bg-white rounded-xl shadow-lg p-6 md:p-8">
-            {/* Steps */}
-            <div className="flex justify-between mb-8">
-                {[1, 2].map((s) => (
-                    <div
-                        key={s}
-                        className={`flex-1 text-center ${s < step ? 'text-gold' : s === step ? 'text-gray-900' : 'text-gray-300'}`}
-                    >
-                        <div className={`
-                            w-8 h-8 mx-auto rounded-full flex items-center justify-center mb-2
-                            ${s < step ? 'bg-gold text-white' :
-                                s === step ? 'bg-gold/20 text-gold border-2 border-gold' :
-                                    'bg-gray-100 text-gray-400'}
-                        `}>
-                            {s}
-                        </div>
-                        <span className="text-sm">
-                            {s === 1 ? 'Presença' : 'Mensagem'}
-                        </span>
-                    </div>
-                ))}
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden max-w-xl mx-auto">
+            {/* Barra de Progresso Superior */}
+            <div className="h-1.5 w-full bg-gray-100">
+                <div
+                    className="h-full bg-gold transition-all duration-500"
+                    style={{ width: step === 1 ? '50%' : '100%' }}
+                />
             </div>
 
-            {/* Step 1: Confirmação */}
-            {step === 1 && (
-                <div className="space-y-6">
-                    <h3 className="text-xl font-semibold text-center mb-6">
-                        Você vai comparecer?
-                    </h3>
+            <div className="p-6 md:p-10">
+                {step === 1 && (
+                    <div className="space-y-8 animate-fade-in">
+                        <div className="text-center">
+                            <h3 className="text-2xl font-bold text-gray-800 mb-2">Você poderá ir?</h3>
+                            <p className="text-gray-500">Sua resposta é muito importante para nós.</p>
+                        </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <button
-                            onClick={() => {
-                                setFormData(prev => ({ ...prev, confirmado: true }));
-                                setStep(2);
-                            }}
-                            className={`
-                                p-6 rounded-xl border-2 transition-all
-                                ${formData.confirmado
-                                    ? 'border-gold bg-gold/5'
-                                    : 'border-gray-200 hover:border-gold/50'}
-                            `}
-                        >
-                            <CheckCircleIcon className={`h-8 w-8 mx-auto mb-2 ${formData.confirmado ? 'text-gold' : 'text-gray-400'}`} />
-                            <span className={`block font-medium ${formData.confirmado ? 'text-gold' : 'text-gray-600'}`}>
-                                Vou Comparecer
-                            </span>
-                        </button>
+                        <div className="grid grid-cols-1 gap-4">
+                            <button
+                                onClick={() => { setFormData({ ...formData, confirmado: true }); setStep(2); }}
+                                className={`flex items-center p-5 rounded-2xl border-2 transition-all ${formData.confirmado ? 'border-gold bg-gold/5 ring-4 ring-gold/10' : 'border-gray-100'
+                                    }`}
+                            >
+                                <CheckCircleIcon className={`h-10 w-10 ${formData.confirmado ? 'text-gold' : 'text-gray-300'}`} />
+                                <div className="ml-4 text-left">
+                                    <span className="block font-bold text-gray-800 text-lg">Sim, eu vou!</span>
+                                    <span className="text-sm text-gray-500">Mal posso esperar pelo grande dia.</span>
+                                </div>
+                            </button>
 
-                        <button
-                            onClick={() => {
-                                setFormData(prev => ({ ...prev, confirmado: false }));
-                                setStep(2);
-                            }}
-                            className={`
-                                p-6 rounded-xl border-2 transition-all
-                                ${!formData.confirmado
-                                    ? 'border-red-500 bg-red-50'
-                                    : 'border-gray-200 hover:border-red-500/50'}
-                            `}
-                        >
-                            <XCircleIcon className={`h-8 w-8 mx-auto mb-2 ${!formData.confirmado ? 'text-red-500' : 'text-gray-400'}`} />
-                            <span className={`block font-medium ${!formData.confirmado ? 'text-red-500' : 'text-gray-600'}`}>
-                                Não Poderei Ir
-                            </span>
-                        </button>
+                            <button
+                                onClick={() => { setFormData({ ...formData, confirmado: false }); setStep(2); }}
+                                className={`flex items-center p-5 rounded-2xl border-2 transition-all ${!formData.confirmado ? 'border-red-500 bg-red-50 ring-4 ring-red-500/10' : 'border-gray-100'
+                                    }`}
+                            >
+                                <XCircleIcon className={`h-10 w-10 ${!formData.confirmado ? 'text-red-500' : 'text-gray-300'}`} />
+                                <div className="ml-4 text-left">
+                                    <span className="block font-bold text-gray-800 text-lg">Infelizmente não</span>
+                                    <span className="text-sm text-gray-500">Não poderei comparecer desta vez.</span>
+                                </div>
+                            </button>
+                        </div>
                     </div>
-                </div>
-            )}
-
-            {/* Step 2: Mensagem */}
-            {step === 2 && (
-                <div className="space-y-6">
-                    <h3 className="text-xl font-semibold text-center mb-6">
-                        {formData.confirmado ? 'Quase lá! Deixe uma mensagem' : 'Que pena! Deixe uma mensagem'}
-                    </h3>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            {formData.confirmado ? 'Deixe uma mensagem para os noivos (opcional)' : 'Deixe uma mensagem de carinho (opcional)'}
-                        </label>
-                        <textarea
-                            value={formData.mensagem}
-                            onChange={(e) => setFormData(prev => ({ ...prev, mensagem: e.target.value }))}
-                            rows={4}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg resize-none"
-                            placeholder={formData.confirmado ? "Estou ansioso para o grande dia!" : "Infelizmente não poderei comparecer, mas estarei torcendo!"}
-                        />
-                    </div>
-                </div>
-            )}
-
-            {/* Navigation Buttons */}
-            <div className="flex justify-between mt-8 pt-6 border-t">
-                {step > 1 && (
-                    <button
-                        onClick={() => setStep(prev => prev - 1)}
-                        className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-                    >
-                        Voltar
-                    </button>
                 )}
 
-                {step === 1 ? (
-                    <div className="ml-auto"></div>
-                ) : (
-                    <button
-                        onClick={handleSubmit}
-                        disabled={submitting}
-                        className="ml-auto px-6 py-2 bg-gold text-white rounded-lg hover:bg-gold/90 disabled:opacity-50"
-                    >
-                        {submitting ? 'Confirmando...' : 'Confirmar Presença'}
-                    </button>
+                {step === 2 && (
+                    <div className="space-y-6 animate-fade-in">
+                        <div className="text-center">
+                            <h3 className="text-2xl font-bold text-gray-800 mb-2">
+                                {formData.confirmado ? 'Que alegria!' : 'Sentiremos sua falta!'}
+                            </h3>
+                            <p className="text-gray-500 text-sm">Deixe um recado especial para os noivos.</p>
+                        </div>
+
+                        <textarea
+                            value={formData.mensagem}
+                            onChange={(e) => setFormData({ ...formData, mensagem: e.target.value })}
+                            rows={5}
+                            className="input-field resize-none"
+                            placeholder="Escreva aqui sua mensagem de carinho..."
+                        />
+
+                        <div className="flex gap-3 pt-4">
+                            <button
+                                onClick={() => setStep(1)}
+                                className="flex-1 btn-secondary flex items-center justify-center gap-2"
+                            >
+                                <ArrowLeftIcon className="h-5 w-5" /> Voltar
+                            </button>
+                            <button
+                                onClick={handleSubmit}
+                                disabled={submitting}
+                                className="flex-[2] btn-primary flex items-center justify-center gap-2"
+                            >
+                                {submitting ? 'Enviando...' : (
+                                    <>Confirmar <ArrowRightIcon className="h-5 w-5" /></>
+                                )}
+                            </button>
+                        </div>
+                    </div>
                 )}
             </div>
         </div>

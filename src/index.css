@@ -11,13 +11,8 @@
   }
 
   body {
-    @apply antialiased text-gray-800;
-    margin: 0;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-      sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    @apply antialiased text-gray-800 bg-white;
+    font-family: 'Inter', sans-serif;
   }
 }
 
@@ -26,81 +21,16 @@
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
 
+  /* Botões com tamanhos de toque otimizados para mobile (min 44px) */
   .btn-primary {
-    @apply bg-gold text-white px-6 py-3 rounded-lg font-semibold hover:bg-gold/90 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gold/50 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center bg-gold text-white px-6 py-3.5 rounded-xl font-semibold hover:bg-gold/90 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-gold/30 disabled:opacity-50 disabled:cursor-not-allowed text-base;
   }
 
   .btn-secondary {
-    @apply bg-white text-gold border-2 border-gold px-6 py-3 rounded-lg font-semibold hover:bg-gold/10 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gold/50;
+    @apply inline-flex items-center justify-center bg-white text-gold border-2 border-gold px-6 py-3.5 rounded-xl font-semibold hover:bg-gold/5 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-gold/20 text-base;
   }
 
   .input-field {
-    @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold/50 focus:border-gold transition-all duration-300 outline-none;
-  }
-}
-
-@layer utilities {
-  .hide-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-
-  .hide-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-}
-
-@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@300;400;500;600;700&display=swap');
-
-@layer components {
-  .font-script {
-    font-family: 'Great Vibes', cursive;
-  }
-
-  .container-custom {
-    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
-  }
-
-  .btn-primary {
-    @apply bg-gold text-white px-6 py-3 rounded-lg font-semibold hover:bg-gold/90 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gold/50 disabled:opacity-50 disabled:cursor-not-allowed;
-  }
-
-  .btn-secondary {
-    @apply bg-white text-gold border-2 border-gold px-6 py-3 rounded-lg font-semibold hover:bg-gold/10 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gold/50;
-  }
-
-  .input-field {
-    @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold/50 focus:border-gold transition-all duration-300 outline-none;
-  }
-
-  /* Animações */
-  .animate-fade-in {
-    animation: fadeIn 1s ease-in-out;
-  }
-
-  .animate-slide-up {
-    animation: slideUp 0.5s ease-out;
-  }
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-
-    to {
-      opacity: 1;
-    }
-  }
-
-  @keyframes slideUp {
-    from {
-      transform: translateY(20px);
-      opacity: 0;
-    }
-
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
+    @apply w-full px-4 py-3.5 border border-gray-300 rounded-xl focus:ring-4 focus:ring-gold/20 focus:border-gold transition-all duration-200 outline-none text-base appearance-none;
   }
 }
