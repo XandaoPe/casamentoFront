@@ -8,6 +8,7 @@ import InvitePage from './pages/InvitePage';
 import AdminLoginPage from './pages/AdminLoginPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminGuestsPage from './pages/AdminGuestsPage';
+import AdminGiftsPage from './pages/AdminGiftsPage'; // Importação da nova página
 import NotFoundPage from './pages/NotFoundPage';
 
 const App: React.FC = () => {
@@ -31,6 +32,7 @@ const App: React.FC = () => {
 
           {/* Rotas administrativas */}
           <Route path="/admin/login" element={<AdminLoginPage />} />
+
           <Route
             path="/admin/dashboard"
             element={
@@ -39,11 +41,22 @@ const App: React.FC = () => {
               </PrivateRoute>
             }
           />
+
           <Route
             path="/admin/guests"
             element={
               <PrivateRoute>
                 <AdminGuestsPage />
+              </PrivateRoute>
+            }
+          />
+
+          {/* ✅ NOVA ROTA: Gerenciamento de Presentes */}
+          <Route
+            path="/admin/gifts"
+            element={
+              <PrivateRoute>
+                <AdminGiftsPage />
               </PrivateRoute>
             }
           />

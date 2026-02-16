@@ -94,17 +94,24 @@ const InvitePage: React.FC = () => {
         }
     };
 
-    const handleBuyGift = async (presente: PresenteCota, quantidade: number) => {
+    const handleBuyGift = async (giftId: string, quantidade: number) => {
         try {
-            await api.post('/gifts/buy', {
-                presenteId: presente.id,
-                quantidade,
-                guestId: guest?._id
-            });
-            toast.success('Cota reservada com sucesso!');
-            await loadGifts();
+            const response = await api.post('/gifts/buy', { giftId, quantidade });
+
+            // Atualiza o estado local do guest para mostrar o que ele escolheu
+            setGuest(prev => prev ? {
+                ...prev,
+                presenteSelecionado: {
+                    presenteId: giftId,
+                    nome: response.data.nome,
+                    valor: response.data.valorCota * quantidade,
+                    quantidade: quantidade
+                }
+            } : null);
+
+            toast.success('Ótima escolha! Obrigado pelo presente! 🎁');
         } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Erro ao comprar cota');
+            toast.error(error.response?.data?.message || 'Erro ao selecionar presente');
         }
     };
 
@@ -183,7 +190,7 @@ const InvitePage: React.FC = () => {
 
             <GiftListSection
                 presentes={presentes}
-                onComprarCota={handleBuyGift}
+                onComprarCota={(gift, qtd) => handleBuyGift(gift.id, qtd)}
             />
 
             <section className="py-16 bg-rose-50">
