@@ -1,164 +1,261 @@
 // src/components/Admin/AddGiftModal.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { XMarkIcon, PhotoIcon, LinkIcon, CameraIcon } from '@heroicons/react/24/outline';
 import api from '../../services/api';
 import { toast } from 'react-hot-toast';
-import { XMarkIcon } from '@heroicons/react/24/outline';
 
-interface Props {
+interface AddGiftModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
-    gift?: any; // Recebe o presente para edição (opcional)
+    gift?: any;
 }
 
-const AddGiftModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, gift }) => {
+const AddGiftModal: React.FC<AddGiftModalProps> = ({ isOpen, onClose, onSuccess, gift }) => {
     const [loading, setLoading] = useState(false);
-    const [form, setForm] = useState({
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const [formData, setFormData] = useState({
         nome: '',
-        valorTotal: 0,
-        temCotas: false,
-        totalCotas: 1,
-        imagemUrl: '',
+        valorTotal: '',
+        temCotas: true,
+        totalCotas: '1',
+        imagemUrl: '', // Pode ser a URL final ou o preview da imagem local
         ativo: true
     });
 
-    // Efeito para preencher o formulário quando for edição
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
     useEffect(() => {
         if (gift) {
-            setForm({
+            setFormData({
                 nome: gift.nome || '',
-                valorTotal: gift.valorTotal || 0,
-                temCotas: gift.temCotas || false,
-                totalCotas: gift.totalCotas || 1,
+                valorTotal: gift.valorTotal?.toString() || '',
+                temCotas: gift.temCotas ?? true,
+                totalCotas: gift.totalCotas?.toString() || '1',
                 imagemUrl: gift.imagemUrl || '',
                 ativo: gift.ativo ?? true
             });
         } else {
-            // Resetar formulário para novo presente
-            setForm({
-                nome: '',
-                valorTotal: 0,
-                temCotas: false,
-                totalCotas: 1,
-                imagemUrl: '',
-                ativo: true
-            });
+            resetForm();
         }
     }, [gift, isOpen]);
 
-    if (!isOpen) return null;
+    const resetForm = () => {
+        setFormData({
+            nome: '',
+            valorTotal: '',
+            temCotas: true,
+            totalCotas: '1',
+            imagemUrl: '',
+            ativo: true
+        });
+        setSelectedFile(null);
+    };
+
+    // Lida com a seleção de arquivo local (Galeria ou Câmera)
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setSelectedFile(file);
+            // Cria um preview local para o usuário ver antes de salvar
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setFormData(prev => ({ ...prev, imagemUrl: reader.result as string }));
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
+
         try {
-            if (gift?._id) {
-                // Modo Edição
-                await api.put(`/gifts/admin/${gift._id}`, form);
-                toast.success('Presente atualizado com sucesso!');
+            // Usamos FormData para permitir o envio do arquivo
+            const data = new FormData();
+            data.append('nome', formData.nome);
+            data.append('valorTotal', formData.valorTotal);
+            data.append('temCotas', String(formData.temCotas));
+            data.append('totalCotas', formData.totalCotas);
+            data.append('ativo', String(formData.ativo));
+
+            if (selectedFile) {
+                data.append('image', selectedFile); // Envia o arquivo físico
             } else {
-                // Modo Cadastro
-                await api.post('/gifts/admin', form);
-                toast.success('Presente cadastrado com sucesso!');
+                data.append('imagemUrl', formData.imagemUrl); // Envia apenas a URL se não houver arquivo
             }
+
+            if (gift?._id) {
+                await api.put(`/gifts/admin/${gift._id}`, data);
+                toast.success('Atualizado com sucesso!');
+            } else {
+                await api.post('/gifts/admin', data);
+                toast.success('Criado com sucesso!');
+            }
+
             onSuccess();
             onClose();
-        } catch (err) {
-            toast.error(gift?._id ? 'Erro ao atualizar presente' : 'Erro ao cadastrar presente');
+        } catch (error: any) {
+            console.error(error);
+            toast.error(error.response?.data?.message || 'Erro ao salvar');
         } finally {
             setLoading(false);
         }
     };
 
+    if (!isOpen) return null;
+
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-2xl p-8 w-full max-w-md relative shadow-2xl max-h-[90vh] overflow-y-auto">
-                <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
-                    <XMarkIcon className="h-6 w-6" />
-                </button>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+            <div className="bg-white w-full max-w-lg rounded-[2.5rem] overflow-hidden shadow-2xl animate-in zoom-in duration-200">
+                <div className="flex justify-between items-center p-6 border-b border-gray-100">
+                    <h2 className="text-xl font-bold text-gray-800 tracking-tight">
+                        {gift ? 'Editar Presente' : 'Novo Presente'}
+                    </h2>
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                        <XMarkIcon className="h-6 w-6 text-gray-400" />
+                    </button>
+                </div>
 
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">
-                    {gift ? 'Editar Presente' : 'Novo Presente'}
-                </h2>
+                <form onSubmit={handleSubmit} className="p-8 space-y-5">
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Nome do Presente</label>
-                        <input
-                            required
-                            className="w-full mt-1 border p-2 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none"
-                            value={form.nome}
-                            onChange={e => setForm({ ...form, nome: e.target.value })}
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Valor Total (R$)</label>
-                            <input
-                                type="number"
-                                required
-                                className="w-full mt-1 border p-2 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none"
-                                value={form.valorTotal}
-                                onChange={e => setForm({ ...form, valorTotal: Number(e.target.value) })}
-                            />
-                        </div>
-                        <div className="flex items-end pb-2">
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    className="w-4 h-4 text-rose-600 rounded"
-                                    checked={form.temCotas}
-                                    onChange={e => setForm({ ...form, temCotas: e.target.checked })}
+                    {/* AREA DE UPLOAD / PREVIEW RESPONSIVO */}
+                    <div className="relative group w-full aspect-video bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200 overflow-hidden flex flex-col items-center justify-center transition-all hover:border-rose-300">
+                        {formData.imagemUrl ? (
+                            <div className="relative w-full h-full">
+                                <img
+                                    src={formData.imagemUrl}
+                                    className="w-full h-full object-contain bg-white"
+                                    alt="Preview"
                                 />
-                                <span className="text-sm font-medium text-gray-700">Usar Cotas?</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    {form.temCotas && (
-                        <div className="bg-rose-50 p-4 rounded-xl border border-rose-100">
-                            <label className="block text-sm font-medium text-rose-700">Quantidade de Cotas</label>
-                            <input
-                                type="number"
-                                min="1"
-                                className="w-full mt-1 border border-rose-200 p-2 rounded-lg focus:ring-rose-500 outline-none"
-                                value={form.totalCotas}
-                                onChange={e => setForm({ ...form, totalCotas: Number(e.target.value) })}
-                            />
-                            <p className="mt-2 text-xs text-rose-600 font-bold">
-                                Valor por cota: R$ {(form.valorTotal / (form.totalCotas || 1)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </p>
-                        </div>
-                    )}
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">URL da Imagem (Opcional)</label>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setFormData({ ...formData, imagemUrl: '' });
+                                        setSelectedFile(null);
+                                    }}
+                                    className="absolute top-4 right-4 bg-red-500 text-white p-2 rounded-full shadow-lg hover:bg-red-600 transition-all"
+                                >
+                                    <XMarkIcon className="h-4 w-4" />
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center gap-3">
+                                <div className="flex gap-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="flex flex-col items-center justify-center w-20 h-20 bg-rose-50 text-rose-500 rounded-2xl hover:bg-rose-100 transition-all"
+                                    >
+                                        <CameraIcon className="h-8 w-8" />
+                                        <span className="text-[10px] font-bold mt-1">Câmera</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="flex flex-col items-center justify-center w-20 h-20 bg-blue-50 text-blue-500 rounded-2xl hover:bg-blue-100 transition-all"
+                                    >
+                                        <PhotoIcon className="h-8 w-8" />
+                                        <span className="text-[10px] font-bold mt-1">Galeria</span>
+                                    </button>
+                                </div>
+                                <p className="text-xs font-semibold text-gray-400">Arraste uma foto ou escolha uma opção</p>
+                            </div>
+                        )}
+                        {/* Input escondido para disparar o seletor de arquivos */}
                         <input
-                            className="w-full mt-1 border p-2 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none"
-                            value={form.imagemUrl}
-                            onChange={e => setForm({ ...form, imagemUrl: e.target.value })}
+                            type="file"
+                            ref={fileInputRef}
+                            className="hidden"
+                            accept="image/*"
+                            onChange={handleFileChange}
                         />
                     </div>
 
-                    <div className="flex items-center gap-2 py-2">
+                    {/* CAMPO DE URL MANUAL */}
+                    <div>
+                        <label className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                            <LinkIcon className="h-3 w-3" /> Ou Cole a URL da Imagem
+                        </label>
+                        <input
+                            type="text"
+                            className="w-full p-3 bg-gray-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-rose-500"
+                            placeholder="https://exemplo.com/imagem.jpg"
+                            value={formData.imagemUrl.startsWith('data:') ? '' : formData.imagemUrl}
+                            onChange={(e) => {
+                                setFormData({ ...formData, imagemUrl: e.target.value });
+                                setSelectedFile(null);
+                            }}
+                        />
+                    </div>
+
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Nome do Item</label>
+                            <input
+                                required
+                                type="text"
+                                className="w-full p-4 bg-gray-50 border-none rounded-2xl font-bold text-gray-700 focus:ring-2 focus:ring-rose-500"
+                                placeholder="Ex: Smart TV 50 Pol"
+                                value={formData.nome}
+                                onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Valor (R$)</label>
+                                <input
+                                    required
+                                    type="number"
+                                    step="0.01"
+                                    className="w-full p-4 bg-gray-50 border-none rounded-2xl font-bold text-gray-700 focus:ring-2 focus:ring-rose-500"
+                                    value={formData.valorTotal}
+                                    onChange={(e) => setFormData({ ...formData, valorTotal: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Cotas</label>
+                                <input
+                                    required
+                                    type="number"
+                                    min="1"
+                                    disabled={!formData.temCotas}
+                                    className="w-full p-4 bg-gray-50 border-none rounded-2xl font-bold text-gray-700 focus:ring-2 focus:ring-rose-500 disabled:opacity-30"
+                                    value={formData.totalCotas}
+                                    onChange={(e) => setFormData({ ...formData, totalCotas: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl cursor-pointer">
                         <input
                             type="checkbox"
-                            id="ativo"
-                            className="w-4 h-4 text-rose-600 rounded"
-                            checked={form.ativo}
-                            onChange={e => setForm({ ...form, ativo: e.target.checked })}
+                            className="w-6 h-6 rounded-lg text-rose-500 border-gray-300 focus:ring-rose-500"
+                            checked={formData.temCotas}
+                            onChange={(e) => setFormData({ ...formData, temCotas: e.target.checked })}
                         />
-                        <label htmlFor="ativo" className="text-sm font-medium text-gray-700 cursor-pointer">Presente Visível no Site</label>
+                        <span className="text-sm font-bold text-gray-600">Dividir presente em cotas</span>
                     </div>
 
-                    <button
-                        disabled={loading}
-                        type="submit"
-                        className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl transition shadow-lg disabled:opacity-50"
-                    >
-                        {loading ? 'Salvando...' : gift ? 'Salvar Alterações' : 'Cadastrar Presente'}
-                    </button>
+                    <div className="flex gap-4 pt-4">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="flex-1 py-4 font-bold text-gray-400 uppercase text-xs tracking-widest"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="flex-[2] py-4 bg-gray-900 text-white rounded-2xl font-bold hover:bg-black shadow-xl transition-all uppercase text-xs tracking-widest"
+                        >
+                            {loading ? 'Processando...' : 'Salvar Alterações'}
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
