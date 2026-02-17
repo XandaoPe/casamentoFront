@@ -6,7 +6,7 @@ import api from '../services/api';
 import { Guest } from '../types/guest.types';
 import { PresenteCota, CardapioItem } from '../types/invite.types';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
-import { InformationCircleIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 
 import HeroSection from '../components/Invite/HeroSection';
 import CountdownSection from '../components/Invite/CountdownSection';
@@ -16,7 +16,6 @@ import LocationMap from '../components/Invite/LocationMap';
 import MenuSection from '../components/Invite/MenuSection';
 import GiftListSection from '../components/Invite/GiftListSection';
 import ConfirmationForm from '../components/Invite/ConfirmationForm';
-import { CheckCircleIcon } from '@heroicons/react/24/solid';
 
 const InvitePage: React.FC = () => {
     const { token } = useParams<{ token: string }>();
@@ -91,8 +90,8 @@ const InvitePage: React.FC = () => {
         }
     };
 
-    const handleBuyGift = async (giftId: string, quantidade: number) => {
-        // Correção para evitar o 'null' enviado no POST
+    // FUNÇÃO ATUALIZADA: Recebe os dados do componente GiftListSection
+    const handleBuyGift = async (giftId: string, quantidade: number, nome: string, mensagem: string) => {
         const qtdFinal = Number(quantidade) || 1;
 
         if (!giftId) {
@@ -101,26 +100,18 @@ const InvitePage: React.FC = () => {
         }
 
         try {
-            // Rota alterada para 'buy' conforme ajuste no Controller
+            // Agora enviamos o nome e a mensagem que o backend exige
             const response = await api.post('/gifts/buy', {
-                giftId: giftId,
-                quantidade: qtdFinal
+                giftId,
+                quantidade: qtdFinal,
+                nome,
+                mensagem
             });
 
-            // Atualiza o estado local do guest
-            setGuest(prev => prev ? {
-                ...prev,
-                presenteSelecionado: {
-                    presenteId: giftId,
-                    nome: response.data.nome,
-                    // Cálculo seguro para evitar NaN
-                    valor: (response.data.valorTotal / (response.data.totalCotas || 1)) * qtdFinal,
-                    quantidade: qtdFinal
-                }
-            } : null);
-
             toast.success('Ótima escolha! Obrigado pelo presente! 🎁');
-            loadGifts(); // Recarrega cotas
+
+            // Recarrega a lista para atualizar as cotas vendidas visualmente
+            loadGifts();
         } catch (error: any) {
             toast.error(error.response?.data?.message || 'Erro ao selecionar presente');
         }
@@ -153,7 +144,6 @@ const InvitePage: React.FC = () => {
         );
     }
 
-    // Configurações de seções
     const photos = [
         { url: '/images/noivado.png', caption: 'Nosso noivado' },
         { url: '/images/viagem.png', caption: 'Viagem dos sonhos' },
@@ -187,10 +177,10 @@ const InvitePage: React.FC = () => {
 
             <MenuSection items={cardapio} isSelectable={false} onSelect={() => { }} />
 
+            {/* COMPONENTE CONECTADO COM A NOVA FUNÇÃO */}
             <GiftListSection
                 presentes={presentes}
-                // Ajuste aqui: usando explicitamente o _id do MongoDB
-                onComprarCota={(gift, qtd) => handleBuyGift(gift._id, qtd)}
+                onComprarCota={handleBuyGift}
             />
 
             <section className="py-16 bg-rose-50">
