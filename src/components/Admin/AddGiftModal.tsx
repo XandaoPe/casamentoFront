@@ -1,6 +1,6 @@
 // src/components/Admin/AddGiftModal.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { XMarkIcon, PhotoIcon, LinkIcon, CameraIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, PhotoIcon, LinkIcon, CameraIcon, CheckCircleIcon, MinusCircleIcon } from '@heroicons/react/24/outline';
 import api from '../../services/api';
 import { toast } from 'react-hot-toast';
 
@@ -20,7 +20,8 @@ const AddGiftModal: React.FC<AddGiftModalProps> = ({ isOpen, onClose, onSuccess,
         valorTotal: '',
         temCotas: true,
         totalCotas: '1',
-        imagemUrl: '', // Pode ser a URL final ou o preview da imagem local
+        cotasVendidas: '0', // Adicionado para edição manual
+        imagemUrl: '',
         ativo: true
     });
 
@@ -33,6 +34,7 @@ const AddGiftModal: React.FC<AddGiftModalProps> = ({ isOpen, onClose, onSuccess,
                 valorTotal: gift.valorTotal?.toString() || '',
                 temCotas: gift.temCotas ?? true,
                 totalCotas: gift.totalCotas?.toString() || '1',
+                cotasVendidas: gift.cotasVendidas?.toString() || '0',
                 imagemUrl: gift.imagemUrl || '',
                 ativo: gift.ativo ?? true
             });
@@ -47,18 +49,17 @@ const AddGiftModal: React.FC<AddGiftModalProps> = ({ isOpen, onClose, onSuccess,
             valorTotal: '',
             temCotas: true,
             totalCotas: '1',
+            cotasVendidas: '0',
             imagemUrl: '',
             ativo: true
         });
         setSelectedFile(null);
     };
 
-    // Lida com a seleção de arquivo local (Galeria ou Câmera)
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
             setSelectedFile(file);
-            // Cria um preview local para o usuário ver antes de salvar
             const reader = new FileReader();
             reader.onloadend = () => {
                 setFormData(prev => ({ ...prev, imagemUrl: reader.result as string }));
@@ -72,26 +73,26 @@ const AddGiftModal: React.FC<AddGiftModalProps> = ({ isOpen, onClose, onSuccess,
         setLoading(true);
 
         try {
-            // Usamos FormData para permitir o envio do arquivo
             const data = new FormData();
             data.append('nome', formData.nome);
             data.append('valorTotal', formData.valorTotal);
             data.append('temCotas', String(formData.temCotas));
             data.append('totalCotas', formData.totalCotas);
+            data.append('cotasVendidas', formData.cotasVendidas);
             data.append('ativo', String(formData.ativo));
 
             if (selectedFile) {
-                data.append('image', selectedFile); // Envia o arquivo físico
+                data.append('image', selectedFile);
             } else {
-                data.append('imagemUrl', formData.imagemUrl); // Envia apenas a URL se não houver arquivo
+                data.append('imagemUrl', formData.imagemUrl);
             }
 
             if (gift?._id) {
                 await api.put(`/gifts/admin/${gift._id}`, data);
-                toast.success('Atualizado com sucesso!');
+                toast.success('Alterações salvas!');
             } else {
                 await api.post('/gifts/admin', data);
-                toast.success('Criado com sucesso!');
+                toast.success('Novo presente criado!');
             }
 
             onSuccess();
@@ -107,89 +108,69 @@ const AddGiftModal: React.FC<AddGiftModalProps> = ({ isOpen, onClose, onSuccess,
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-            <div className="bg-white w-full max-w-lg rounded-[2.5rem] overflow-hidden shadow-2xl animate-in zoom-in duration-200">
-                <div className="flex justify-between items-center p-6 border-b border-gray-100">
-                    <h2 className="text-xl font-bold text-gray-800 tracking-tight">
-                        {gift ? 'Editar Presente' : 'Novo Presente'}
-                    </h2>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm overflow-y-auto">
+            <div className="bg-white w-full max-w-lg rounded-[2.5rem] overflow-hidden shadow-2xl my-auto animate-in zoom-in duration-200">
+                <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-gray-50/50">
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-800 tracking-tight">
+                            {gift ? 'Editar Detalhes' : 'Novo Presente'}
+                        </h2>
+                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Painel Administrativo</p>
+                    </div>
+                    <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
                         <XMarkIcon className="h-6 w-6 text-gray-400" />
                     </button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-8 space-y-5">
 
-                    {/* AREA DE UPLOAD / PREVIEW RESPONSIVO */}
+                    {/* STATUS E ATIVAÇÃO */}
+                    <div className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-gray-100">
+                        <div className="flex items-center gap-2">
+                            {formData.ativo ?
+                                <CheckCircleIcon className="h-5 w-5 text-emerald-500" /> :
+                                <MinusCircleIcon className="h-5 w-5 text-gray-300" />
+                            }
+                            <span className={`text-sm font-black uppercase tracking-wider ${formData.ativo ? 'text-emerald-600' : 'text-gray-400'}`}>
+                                {formData.ativo ? 'Item Ativo' : 'Item Inativo'}
+                            </span>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setFormData({ ...formData, ativo: !formData.ativo })}
+                            className={`w-12 h-6 rounded-full transition-all relative ${formData.ativo ? 'bg-emerald-500' : 'bg-gray-300'}`}
+                        >
+                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${formData.ativo ? 'left-7' : 'left-1'}`} />
+                        </button>
+                    </div>
+
+                    {/* AREA DE IMAGEM */}
                     <div className="relative group w-full aspect-video bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200 overflow-hidden flex flex-col items-center justify-center transition-all hover:border-rose-300">
                         {formData.imagemUrl ? (
                             <div className="relative w-full h-full">
-                                <img
-                                    src={formData.imagemUrl}
-                                    className="w-full h-full object-contain bg-white"
-                                    alt="Preview"
-                                />
+                                <img src={formData.imagemUrl} className="w-full h-full object-contain bg-white" alt="Preview" />
                                 <button
                                     type="button"
-                                    onClick={() => {
-                                        setFormData({ ...formData, imagemUrl: '' });
-                                        setSelectedFile(null);
-                                    }}
+                                    onClick={() => { setFormData({ ...formData, imagemUrl: '' }); setSelectedFile(null); }}
                                     className="absolute top-4 right-4 bg-red-500 text-white p-2 rounded-full shadow-lg hover:bg-red-600 transition-all"
                                 >
                                     <XMarkIcon className="h-4 w-4" />
                                 </button>
                             </div>
                         ) : (
-                            <div className="flex flex-col items-center gap-3">
-                                <div className="flex gap-4">
-                                    <button
-                                        type="button"
-                                        onClick={() => fileInputRef.current?.click()}
-                                        className="flex flex-col items-center justify-center w-20 h-20 bg-rose-50 text-rose-500 rounded-2xl hover:bg-rose-100 transition-all"
-                                    >
-                                        <CameraIcon className="h-8 w-8" />
-                                        <span className="text-[10px] font-bold mt-1">Câmera</span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => fileInputRef.current?.click()}
-                                        className="flex flex-col items-center justify-center w-20 h-20 bg-blue-50 text-blue-500 rounded-2xl hover:bg-blue-100 transition-all"
-                                    >
-                                        <PhotoIcon className="h-8 w-8" />
-                                        <span className="text-[10px] font-bold mt-1">Galeria</span>
-                                    </button>
-                                </div>
-                                <p className="text-xs font-semibold text-gray-400">Arraste uma foto ou escolha uma opção</p>
+                            <div className="flex gap-4">
+                                <button type="button" onClick={() => fileInputRef.current?.click()} className="flex flex-col items-center justify-center w-20 h-20 bg-rose-50 text-rose-500 rounded-2xl hover:bg-rose-100 transition-all">
+                                    <CameraIcon className="h-8 w-8" /><span className="text-[10px] font-bold mt-1">Foto</span>
+                                </button>
+                                <button type="button" onClick={() => fileInputRef.current?.click()} className="flex flex-col items-center justify-center w-20 h-20 bg-blue-50 text-blue-500 rounded-2xl hover:bg-blue-100 transition-all">
+                                    <PhotoIcon className="h-8 w-8" /><span className="text-[10px] font-bold mt-1">Galeria</span>
+                                </button>
                             </div>
                         )}
-                        {/* Input escondido para disparar o seletor de arquivos */}
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            className="hidden"
-                            accept="image/*"
-                            onChange={handleFileChange}
-                        />
+                        <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
                     </div>
 
-                    {/* CAMPO DE URL MANUAL */}
-                    <div>
-                        <label className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">
-                            <LinkIcon className="h-3 w-3" /> Ou Cole a URL da Imagem
-                        </label>
-                        <input
-                            type="text"
-                            className="w-full p-3 bg-gray-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-rose-500"
-                            placeholder="https://exemplo.com/imagem.jpg"
-                            value={formData.imagemUrl.startsWith('data:') ? '' : formData.imagemUrl}
-                            onChange={(e) => {
-                                setFormData({ ...formData, imagemUrl: e.target.value });
-                                setSelectedFile(null);
-                            }}
-                        />
-                    </div>
-
+                    {/* DEMAIS CAMPOS */}
                     <div className="space-y-4">
                         <div>
                             <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Nome do Item</label>
@@ -197,7 +178,6 @@ const AddGiftModal: React.FC<AddGiftModalProps> = ({ isOpen, onClose, onSuccess,
                                 required
                                 type="text"
                                 className="w-full p-4 bg-gray-50 border-none rounded-2xl font-bold text-gray-700 focus:ring-2 focus:ring-rose-500"
-                                placeholder="Ex: Smart TV 50 Pol"
                                 value={formData.nome}
                                 onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
                             />
@@ -205,7 +185,7 @@ const AddGiftModal: React.FC<AddGiftModalProps> = ({ isOpen, onClose, onSuccess,
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Valor (R$)</label>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Valor Total (R$)</label>
                                 <input
                                     required
                                     type="number"
@@ -216,7 +196,7 @@ const AddGiftModal: React.FC<AddGiftModalProps> = ({ isOpen, onClose, onSuccess,
                                 />
                             </div>
                             <div>
-                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Cotas</label>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Total de Cotas</label>
                                 <input
                                     required
                                     type="number"
@@ -228,6 +208,22 @@ const AddGiftModal: React.FC<AddGiftModalProps> = ({ isOpen, onClose, onSuccess,
                                 />
                             </div>
                         </div>
+
+                        {/* NOVO: COTAS VENDIDAS - Apenas na edição */}
+                        {gift && (
+                            <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100">
+                                <label className="block text-[10px] font-black text-amber-600 uppercase tracking-widest mb-2">Cotas Reservadas/Vendidas</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    max={formData.totalCotas}
+                                    className="w-full bg-transparent border-b border-amber-200 font-bold text-amber-900 focus:outline-none"
+                                    value={formData.cotasVendidas}
+                                    onChange={(e) => setFormData({ ...formData, cotasVendidas: e.target.value })}
+                                />
+                                <p className="text-[9px] text-amber-500 mt-1">* Altere aqui se precisar liberar cotas ou registrar manualmente.</p>
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl cursor-pointer">
@@ -241,11 +237,7 @@ const AddGiftModal: React.FC<AddGiftModalProps> = ({ isOpen, onClose, onSuccess,
                     </div>
 
                     <div className="flex gap-4 pt-4">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="flex-1 py-4 font-bold text-gray-400 uppercase text-xs tracking-widest"
-                        >
+                        <button type="button" onClick={onClose} className="flex-1 py-4 font-bold text-gray-400 uppercase text-xs tracking-widest">
                             Cancelar
                         </button>
                         <button
@@ -253,7 +245,7 @@ const AddGiftModal: React.FC<AddGiftModalProps> = ({ isOpen, onClose, onSuccess,
                             disabled={loading}
                             className="flex-[2] py-4 bg-gray-900 text-white rounded-2xl font-bold hover:bg-black shadow-xl transition-all uppercase text-xs tracking-widest"
                         >
-                            {loading ? 'Processando...' : 'Salvar Alterações'}
+                            {loading ? 'Salvando...' : 'Confirmar Alterações'}
                         </button>
                     </div>
                 </form>
