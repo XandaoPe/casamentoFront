@@ -1,4 +1,3 @@
-// src/hooks/useInvitations.ts
 import { useState } from 'react';
 import { invitationsService } from '../services/invitations.service';
 import { toast } from 'react-hot-toast';
@@ -39,22 +38,15 @@ export const useInvitations = () => {
         try {
             const response = await invitationsService.getWhatsAppLink(guestId);
 
-            // Abre o WhatsApp Web com a mensagem pronta
-            window.open(response.data.whatsappUrl, '_blank');
-
-            // Toast simples sem JSX complexo para evitar erros
-            toast.success('✅ WhatsApp aberto! Agora é só clicar em ENVIAR.', {
-                duration: 5000
-            });
-
-            // Mostra o link em um segundo toast
-            toast.success(`🔗 Link: ${response.data.inviteLink}`, {
-                duration: 8000
-            });
+            // Abre a URL do WhatsApp em nova aba
+            if (response.data?.whatsappUrl) {
+                window.open(response.data.whatsappUrl, '_blank');
+                toast.success('Link do WhatsApp gerado!');
+            }
 
             return response.data;
         } catch (err: any) {
-            toast.error(err.response?.data?.message || 'Erro ao gerar link do WhatsApp');
+            toast.error(err.response?.data?.message || 'Erro ao gerar WhatsApp');
             throw err;
         } finally {
             setSending(false);
@@ -65,24 +57,15 @@ export const useInvitations = () => {
         setSending(true);
         try {
             const response = await invitationsService.sendBulk(guestIds, method);
-            toast.success(`${response.data.success} convites enviados com sucesso!`);
-            if (response.data.errors > 0) {
-                toast.error(`${response.data.errors} falhas no envio`);
-            }
+            toast.success(`${response.data.success} convites processados!`);
             return response.data;
         } catch (err: any) {
-            toast.error(err.response?.data?.message || 'Erro no envio em massa');
+            toast.error('Erro no envio em massa');
             throw err;
         } finally {
             setSending(false);
         }
     };
 
-    return {
-        sending,
-        sendEmail,
-        sendSms,
-        sendWhatsApp,
-        sendBulk,
-    };
+    return { sending, sendEmail, sendSms, sendWhatsApp, sendBulk };
 };

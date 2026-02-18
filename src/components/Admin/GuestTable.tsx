@@ -1,4 +1,3 @@
-// src/components/Admin/GuestTable.tsx
 import React from 'react';
 import {
     PencilIcon,
@@ -22,7 +21,6 @@ interface GuestTableProps {
     onViewDetails: (guest: Guest) => void;
     onEdit: (guest: Guest) => void;
     onDelete: (id: string) => void;
-    // ✅ Separar os métodos
     onSendEmail: (guest: Guest) => void;
     onSendSms: (guest: Guest) => void;
     onSendWhatsApp: (guest: Guest) => void;
@@ -45,7 +43,7 @@ const GuestTable: React.FC<GuestTableProps> = ({
 }) => {
     if (loading) {
         return (
-            <div className="bg-white rounded-xl shadow-sm p-8">
+            <div className="bg-white rounded-xl shadow-sm p-8 text-center">
                 <div className="flex justify-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gold"></div>
                 </div>
@@ -67,7 +65,7 @@ const GuestTable: React.FC<GuestTableProps> = ({
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>
-                            <th className="px-6 py-3 text-left">
+                            <th className="px-6 py-3 text-left w-10">
                                 <input
                                     type="checkbox"
                                     checked={selectedGuests.length === guests.length && guests.length > 0}
@@ -75,27 +73,13 @@ const GuestTable: React.FC<GuestTableProps> = ({
                                     className="rounded border-gray-300 text-gold focus:ring-gold"
                                 />
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Nome
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Contato
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Grupo
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Status
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Acompanhantes
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Convite
-                            </th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Ações
-                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contato</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grupo</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Presença</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vagas</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Convite</th>
+                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -110,18 +94,14 @@ const GuestTable: React.FC<GuestTableProps> = ({
                                     />
                                 </td>
                                 <td className="px-6 py-4">
-                                    <div className="text-sm font-medium text-gray-900">
-                                        {guest.nome}
-                                    </div>
+                                    <div className="text-sm font-medium text-gray-900">{guest.nome}</div>
                                     {guest.observacoes && (
-                                        <div className="text-xs text-gray-500 truncate max-w-[200px]">
-                                            {guest.observacoes}
-                                        </div>
+                                        <div className="text-xs text-gray-500 truncate max-w-[150px]">{guest.observacoes}</div>
                                     )}
                                 </td>
-                                <td className="px-6 py-4">
-                                    <div className="text-sm text-gray-600">{guest.email}</div>
-                                    <div className="text-sm text-gray-500">{formatPhone(guest.telefone)}</div>
+                                <td className="px-6 py-4 text-sm">
+                                    <div className="text-gray-900">{guest.email}</div>
+                                    <div className="text-gray-500">{formatPhone(guest.telefone)}</div>
                                 </td>
                                 <td className="px-6 py-4">
                                     <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
@@ -130,73 +110,69 @@ const GuestTable: React.FC<GuestTableProps> = ({
                                 </td>
                                 <td className="px-6 py-4">
                                     {guest.confirmado ? (
-                                        <span className="flex items-center text-sm text-green-600">
-                                            <CheckCircleIcon className="h-4 w-4 mr-1" />
-                                            Confirmado
+                                        <span className="flex items-center text-sm text-green-600 font-medium">
+                                            <CheckCircleIcon className="h-4 w-4 mr-1" /> Confirmado
                                         </span>
                                     ) : (
                                         <span className="flex items-center text-sm text-gray-400">
-                                            <XCircleIcon className="h-4 w-4 mr-1" />
-                                            Pendente
+                                            <XCircleIcon className="h-4 w-4 mr-1" /> Pendente
                                         </span>
                                     )}
                                 </td>
                                 <td className="px-6 py-4 text-sm text-gray-600">
-                                    {guest.confirmado ? guest.numAcompanhantes : '-'} / {guest.maxAcompanhantes}
+                                    {guest.confirmado ? guest.numAcompanhantes : '0'} / {guest.maxAcompanhantes}
                                 </td>
                                 <td className="px-6 py-4">
+                                    {/* AQUI É ONDE O STATUS MUDA */}
                                     {guest.conviteEnviado ? (
-                                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                             Enviado
                                         </span>
                                     ) : (
-                                        <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
                                             Pendente
                                         </span>
                                     )}
                                 </td>
-                                <td className="px-6 py-4 text-right space-x-2">
+                                <td className="px-6 py-4 text-right space-x-1">
                                     <button
                                         onClick={() => onViewDetails(guest)}
-                                        className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
-                                        title="Ver detalhes"
+                                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                        title="Ver Detalhes"
                                     >
                                         <EyeIcon className="h-5 w-5" />
                                     </button>
+
+                                    {/* Botão WhatsApp */}
                                     <button
-                                        onClick={() => onSendWhatsApp(guest)} // ✅ Chamar método específico
+                                        onClick={() => onSendWhatsApp(guest)}
                                         disabled={sending}
-                                        className="p-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors disabled:opacity-50"
+                                        className={`p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors ${sending ? 'animate-pulse' : ''}`}
                                         title="Enviar WhatsApp"
                                     >
                                         <ChatBubbleLeftRightIcon className="h-5 w-5" />
                                     </button>
+
                                     <button
-                                        onClick={() => onSendEmail(guest)} // ✅ Chamar método específico
+                                        onClick={() => onSendEmail(guest)}
                                         disabled={sending}
-                                        className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors disabled:opacity-50"
+                                        className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                                         title="Enviar Email"
                                     >
                                         <EnvelopeIcon className="h-5 w-5" />
                                     </button>
-                                    <button
-                                        onClick={() => onSendSms(guest)} // ✅ Chamar método específico
-                                        disabled={sending}
-                                        className="p-1 text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded transition-colors disabled:opacity-50"
-                                        title="Enviar SMS"
-                                    >
-                                        <DevicePhoneMobileIcon className="h-5 w-5" />
-                                    </button>
+
                                     <button
                                         onClick={() => onEdit(guest)}
-                                        className="p-1 text-gold hover:text-gold/80 hover:bg-gold/10 rounded transition-colors"
+                                        className="p-1.5 text-gold hover:bg-gold/10 rounded-lg transition-colors"
                                         title="Editar"
                                     >
                                         <PencilIcon className="h-5 w-5" />
                                     </button>
+
                                     <button
                                         onClick={() => onDelete(guest._id)}
-                                        className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+                                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                         title="Excluir"
                                     >
                                         <TrashIcon className="h-5 w-5" />

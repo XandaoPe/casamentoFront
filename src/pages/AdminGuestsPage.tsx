@@ -90,27 +90,41 @@ const AdminGuestsPage: React.FC = () => {
     const handleSendEmail = async (guest: Guest) => {
         try {
             await sendEmail(guest._id);
-            await refreshGuests();
+            await refreshGuests(); // Atualiza a lista para mostrar "Enviado"
         } catch (error) {
-            // Erro já tratado no hook
+            console.error(error);
         }
     };
 
     const handleSendSms = async (guest: Guest) => {
         try {
             await sendSms(guest._id);
-            await refreshGuests();
+            await refreshGuests(); // Atualiza a lista para mostrar "Enviado"
         } catch (error) {
-            // Erro já tratado no hook
+            console.error(error);
         }
     };
 
     const handleSendWhatsApp = async (guest: Guest) => {
         try {
             await sendWhatsApp(guest._id);
-            await refreshGuests();
+            // Pequeno delay para garantir que o banco processou antes do refresh
+            setTimeout(async () => {
+                await refreshGuests();
+            }, 500);
         } catch (error) {
-            // Erro já tratado no hook
+            console.error(error);
+        }
+    };
+
+    const confirmBulkSend = async () => {
+        try {
+            await sendBulk(selectedGuests, bulkMethod);
+            setShowBulkModal(false);
+            setSelectedGuests([]);
+            await refreshGuests(); // Atualiza todos os selecionados para "Enviado"
+        } catch (error) {
+            console.error(error);
         }
     };
 
@@ -156,17 +170,6 @@ const AdminGuestsPage: React.FC = () => {
             return;
         }
         setShowBulkModal(true);
-    };
-
-    const confirmBulkSend = async () => {
-        try {
-            await sendBulk(selectedGuests, bulkMethod);
-            setShowBulkModal(false);
-            setSelectedGuests([]);
-            await refreshGuests();
-        } catch (error) {
-            // Erro já tratado no hook
-        }
     };
 
     const handleExportExcel = () => {
