@@ -14,7 +14,9 @@ import {
     CurrencyDollarIcon,
     ChartPieIcon,
     ArrowTrendingUpIcon,
-    CalendarIcon
+    CalendarIcon,
+    ChevronDownIcon,
+    CheckBadgeIcon
 } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
@@ -27,8 +29,8 @@ const AdminGiftsPage: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedGift, setSelectedGift] = useState<any>(null);
     const [viewingGift, setViewingGift] = useState<any>(null);
+    const [isAccordionOpen, setIsAccordionOpen] = useState(false);
 
-    // Estados para controle de compradores
     const [showBuyersModal, setShowBuyersModal] = useState(false);
     const [reservations, setReservations] = useState<any[]>([]);
     const [loadingReservations, setLoadingReservations] = useState(false);
@@ -48,9 +50,15 @@ const AdminGiftsPage: React.FC = () => {
 
     useEffect(() => { loadGifts(); }, []);
 
-    // --- LÓGICA DO DASHBOARD ---
-    const dashboardStats = useMemo(() => {
-        if (gifts.length === 0) return { totalArrecadado: 0, metaTotal: 0, progresso: 0, ticketMedio: 0, totalVendas: 0 };
+    // --- LÓGICA DO DASHBOARD ATUALIZADA ---
+    const stats = useMemo(() => {
+        if (gifts.length === 0) return {
+            totalArrecadado: 0,
+            metaTotal: 0,
+            presentesFinalizados: 0,
+            totalCotasVendidas: 0,
+            progresso: 0
+        };
 
         const totalArrecadado = gifts.reduce((acc, gift) => {
             const valorCota = gift.valorTotal / gift.totalCotas;
@@ -58,13 +66,16 @@ const AdminGiftsPage: React.FC = () => {
         }, 0);
 
         const metaTotal = gifts.reduce((acc, gift) => acc + (gift.valorTotal || 0), 0);
-        const totalVendas = gifts.reduce((acc, gift) => acc + (gift.cotasVendidas || 0), 0);
+
+        // Presentes que foram 100% completados
+        const presentesFinalizados = gifts.filter(g => g.cotasVendidas >= g.totalCotas).length;
+
+        // Total bruto de cotas de todos os presentes
+        const totalCotasVendidas = gifts.reduce((acc, gift) => acc + (gift.cotasVendidas || 0), 0);
+
         const progresso = metaTotal > 0 ? (totalArrecadado / metaTotal) * 100 : 0;
 
-        // Ticket médio por cota/item (estimativa baseada nos presentes)
-        const ticketMedio = totalVendas > 0 ? totalArrecadado / totalVendas : 0;
-
-        return { totalArrecadado, metaTotal, progresso, ticketMedio, totalVendas };
+        return { totalArrecadado, metaTotal, presentesFinalizados, totalCotasVendidas, progresso };
     }, [gifts]);
 
     const handleEditClick = (gift: any) => {
@@ -91,7 +102,6 @@ const AdminGiftsPage: React.FC = () => {
             const response = await api.get(`/gifts/${gift._id}/reservations`);
             setReservations(response.data);
         } catch (error) {
-            console.error(error);
             toast.error('Erro ao carregar lista de convidados');
         } finally {
             setLoadingReservations(false);
@@ -112,7 +122,7 @@ const AdminGiftsPage: React.FC = () => {
                                 <GiftIcon className="h-8 w-8 text-rose-600" />
                                 Gestão de Presentes
                             </h1>
-                            <p className="text-gray-500 text-sm">Dashboard e controle da lista de casamento</p>
+                            <p className="text-gray-500 text-sm">Controle financeiro e de cotas</p>
                         </div>
                     </div>
 
@@ -125,62 +135,99 @@ const AdminGiftsPage: React.FC = () => {
                     </button>
                 </div>
 
-                {/* --- SEÇÃO DASHBOARD --- */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-                    {/* Card: Total Financeiro */}
-                    <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group">
-                        <div className="absolute -right-4 -top-4 text-emerald-50 opacity-10 group-hover:scale-110 transition-transform">
-                            <CurrencyDollarIcon className="h-24 w-24" />
-                        </div>
+                {/* --- SEÇÃO DASHBOARD REESTRUTURADA --- */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    {/* Card: Saldo Real */}
+                    <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
                         <p className="text-[10px] font-black uppercase text-emerald-600 tracking-widest mb-1">Total Arrecadado</p>
                         <h3 className="text-2xl font-black text-gray-900">
-                            R$ {dashboardStats.totalArrecadado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            R$ {stats.totalArrecadado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </h3>
-                        <p className="text-xs text-gray-400 mt-2 italic">Meta: R$ {dashboardStats.metaTotal.toLocaleString('pt-BR')}</p>
+                        <p className="text-[10px] text-gray-400 mt-2 font-bold uppercase tracking-tighter">Meta: R$ {stats.metaTotal.toLocaleString('pt-BR')}</p>
                     </div>
 
-                    {/* Card: Progresso */}
+                    {/* Card: Presentes Reais (Finalizados) */}
+                    <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group">
+                        <div className="absolute -right-2 -top-2 text-rose-50 opacity-20 group-hover:scale-110 transition-transform">
+                            <CheckBadgeIcon className="h-20 w-20" />
+                        </div>
+                        <p className="text-[10px] font-black uppercase text-rose-600 tracking-widest mb-1">Itens Completos</p>
+                        <h3 className="text-2xl font-black text-gray-900">{stats.presentesFinalizados}</h3>
+                        <p className="text-[10px] text-gray-400 mt-2 font-bold uppercase tracking-tighter italic">Presentes 100% pagos</p>
+                    </div>
+
+                    {/* Card: Total de Cotas (Fluxo) */}
                     <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
-                        <p className="text-[10px] font-black uppercase text-rose-600 tracking-widest mb-1">Conclusão da Lista</p>
-                        <div className="flex items-end gap-2">
-                            <h3 className="text-2xl font-black text-gray-900">{dashboardStats.progresso.toFixed(1)}%</h3>
-                            <ArrowTrendingUpIcon className="h-5 w-5 text-rose-500 mb-1" />
-                        </div>
-                        <div className="w-full bg-gray-100 h-2 rounded-full mt-3">
-                            <div
-                                className="bg-rose-500 h-full rounded-full transition-all duration-1000"
-                                style={{ width: `${dashboardStats.progresso}%` }}
-                            />
-                        </div>
+                        <p className="text-[10px] font-black uppercase text-blue-600 tracking-widest mb-1">Cotas Recebidas</p>
+                        <h3 className="text-2xl font-black text-gray-900">{stats.totalCotasVendidas}</h3>
+                        <p className="text-[10px] text-gray-400 mt-2 font-bold uppercase tracking-tighter italic">Participações totais</p>
                     </div>
 
-                    {/* Card: Cotas Vendidas */}
-                    <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden">
-                        <p className="text-[10px] font-black uppercase text-blue-600 tracking-widest mb-1">Presentes Recebidos</p>
-                        <h3 className="text-2xl font-black text-gray-900">{dashboardStats.totalVendas} <span className="text-sm font-medium text-gray-400">unid.</span></h3>
-                        <div className="flex items-center gap-1 mt-2 text-blue-500">
-                            <ChartPieIcon className="h-4 w-4" />
-                            <span className="text-[10px] font-bold">Cotas e itens totais</span>
-                        </div>
-                    </div>
-
-                    {/* Card: Ticket Médio */}
+                    {/* Card: % de Conclusão */}
                     <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
-                        <p className="text-[10px] font-black uppercase text-amber-600 tracking-widest mb-1">Valor Médio</p>
-                        <h3 className="text-2xl font-black text-gray-900">
-                            R$ {dashboardStats.ticketMedio.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </h3>
-                        <p className="text-[10px] text-gray-400 mt-2 font-bold uppercase tracking-tighter">Por contribuição</p>
+                        <p className="text-[10px] font-black uppercase text-amber-600 tracking-widest mb-1">Progresso Geral</p>
+                        <div className="flex items-center gap-2">
+                            <h3 className="text-2xl font-black text-gray-900">{stats.progresso.toFixed(1)}%</h3>
+                            <ArrowTrendingUpIcon className="h-5 w-5 text-amber-500" />
+                        </div>
+                        <div className="w-full bg-gray-100 h-1.5 rounded-full mt-3">
+                            <div className="bg-amber-500 h-full rounded-full" style={{ width: `${stats.progresso}%` }} />
+                        </div>
                     </div>
                 </div>
 
-                {/* --- LISTAGEM DE PRESENTES --- */}
+                {/* --- ACCORDION DE DETALHE POR COTA --- */}
+                <div className="mb-10 bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm">
+                    <button
+                        onClick={() => setIsAccordionOpen(!isAccordionOpen)}
+                        className="w-full flex items-center justify-between p-6 hover:bg-gray-50 transition-colors"
+                    >
+                        <div className="flex items-center gap-3">
+                            <ChartPieIcon className="h-6 w-6 text-blue-500" />
+                            <div className="text-left">
+                                <h3 className="font-bold text-gray-800">Detalhamento por Cotas</h3>
+                                <p className="text-xs text-gray-400">Acompanhe o preenchimento de cada item</p>
+                            </div>
+                        </div>
+                        <ChevronDownIcon className={`h-5 w-5 text-gray-400 transition-transform duration-300 ${isAccordionOpen ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {isAccordionOpen && (
+                        <div className="px-6 pb-6 pt-2 border-t border-gray-50 max-h-96 overflow-y-auto custom-scrollbar">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {gifts.map(gift => (
+                                    <div key={gift._id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                                        <div className="h-12 w-12 rounded-xl bg-white flex-shrink-0 border border-gray-100 overflow-hidden">
+                                            {gift.imagemUrl ? <img src={gift.imagemUrl} className="h-full w-full object-cover" /> : <PhotoIcon className="h-6 w-6 m-auto text-gray-200 mt-3" />}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex justify-between items-center mb-1">
+                                                <p className="text-xs font-bold text-gray-700 truncate pr-2">{gift.nome}</p>
+                                                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase ${gift.cotasVendidas >= gift.totalCotas ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>
+                                                    {gift.cotasVendidas}/{gift.totalCotas}
+                                                </span>
+                                            </div>
+                                            <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
+                                                <div
+                                                    className={`h-full transition-all duration-700 ${gift.cotasVendidas >= gift.totalCotas ? 'bg-green-500' : 'bg-blue-500'}`}
+                                                    style={{ width: `${Math.min((gift.cotasVendidas / gift.totalCotas) * 100, 100)}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* --- LISTAGEM DE PRESENTES (GRID) --- */}
                 <div className="mb-6 flex items-center justify-between">
-                    <h2 className="text-lg font-bold text-gray-800">Seus Itens ({gifts.length})</h2>
+                    <h2 className="text-lg font-bold text-gray-800">Todos os Itens ({gifts.length})</h2>
                 </div>
 
                 {loading ? (
-                    <div className="text-center py-20 font-medium text-gray-400 animate-pulse">Carregando presentes...</div>
+                    <div className="text-center py-20 font-medium text-gray-400 animate-pulse">Sincronizando presentes...</div>
                 ) : gifts.length === 0 ? (
                     <div className="bg-white rounded-3xl p-12 text-center border-2 border-dashed border-gray-200">
                         <GiftIcon className="h-12 w-12 text-gray-300 mx-auto mb-4" />
@@ -204,39 +251,33 @@ const AdminGiftsPage: React.FC = () => {
                                     )}
 
                                     <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onClick={() => setViewingGift(gift)} className="p-2 bg-white/90 backdrop-blur rounded-lg shadow-sm hover:text-blue-600"><EyeIcon className="h-5 w-5" /></button>
-                                        <button onClick={() => handleEditClick(gift)} className="p-2 bg-white/90 backdrop-blur rounded-lg shadow-sm hover:text-amber-600"><PencilIcon className="h-5 w-5" /></button>
-                                        <button onClick={() => handleDelete(gift._id)} className="p-2 bg-white/90 backdrop-blur rounded-lg shadow-sm hover:text-red-600"><TrashIcon className="h-5 w-5" /></button>
+                                        <button onClick={() => setViewingGift(gift)} className="p-2 bg-white/90 backdrop-blur rounded-lg shadow-sm hover:text-blue-600 transition-colors"><EyeIcon className="h-5 w-5" /></button>
+                                        <button onClick={() => handleEditClick(gift)} className="p-2 bg-white/90 backdrop-blur rounded-lg shadow-sm hover:text-amber-600 transition-colors"><PencilIcon className="h-5 w-5" /></button>
+                                        <button onClick={() => handleDelete(gift._id)} className="p-2 bg-white/90 backdrop-blur rounded-lg shadow-sm hover:text-red-600 transition-colors"><TrashIcon className="h-5 w-5" /></button>
                                     </div>
 
-                                    <div className="absolute bottom-3 left-3">
-                                        <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-widest ${gift.ativo ? 'bg-green-500 text-white' : 'bg-gray-500 text-white'}`}>
-                                            {gift.ativo ? 'Ativo' : 'Oculto'}
-                                        </span>
-                                    </div>
+                                    {gift.cotasVendidas >= gift.totalCotas && (
+                                        <div className="absolute top-3 left-3 bg-green-500 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase flex items-center gap-1 shadow-lg">
+                                            <CheckBadgeIcon className="h-3 w-3" /> Concluído
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="p-5">
                                     <h3 className="font-bold text-gray-800 text-lg mb-1 truncate">{gift.nome}</h3>
-
-                                    <div className="w-full bg-gray-100 h-2 rounded-full my-3 overflow-hidden">
-                                        <div
-                                            className="bg-rose-500 h-full transition-all duration-500"
-                                            style={{ width: `${(gift.cotasVendidas / gift.totalCotas) * 100}%` }}
-                                        />
-                                    </div>
-
-                                    <div className="flex justify-between items-center">
+                                    <div className="flex justify-between items-end mt-4">
                                         <div>
-                                            <p className="text-rose-600 font-black text-sm">R$ {gift.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                                            <p className="text-[10px] text-gray-400 uppercase font-bold tracking-tighter">
-                                                {gift.cotasVendidas} de {gift.totalCotas} cotas
+                                            <p className="text-rose-600 font-black text-lg leading-none">
+                                                R$ {gift.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                            </p>
+                                            <p className="text-[10px] text-gray-400 uppercase font-bold tracking-tighter mt-1">
+                                                {gift.cotasVendidas} de {gift.totalCotas} cotas vendidas
                                             </p>
                                         </div>
 
                                         <button
                                             onClick={() => handleShowBuyers(gift)}
-                                            className="bg-rose-50 text-rose-600 px-3 py-1.5 rounded-lg hover:bg-rose-100 transition-colors flex items-center gap-1.5"
+                                            className="bg-gray-50 text-gray-600 px-3 py-2 rounded-xl hover:bg-rose-50 hover:text-rose-600 transition-all border border-gray-100 flex items-center gap-2"
                                         >
                                             <UserGroupIcon className="h-4 w-4" />
                                             <span className="text-xs font-bold">Ver Nomes</span>
@@ -249,7 +290,7 @@ const AdminGiftsPage: React.FC = () => {
                 )}
             </div>
 
-            {/* --- MODAIS (Buyers, Viewing, AddGift) --- */}
+            {/* --- MODAL DE COMPRADORES --- */}
             {showBuyersModal && (
                 <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
                     <div className="bg-white rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
@@ -263,41 +304,37 @@ const AdminGiftsPage: React.FC = () => {
                             </button>
                         </div>
 
-                        <div className="p-6 overflow-y-auto custom-scrollbar">
+                        <div className="p-6 overflow-y-auto custom-scrollbar bg-white">
                             {loadingReservations ? (
                                 <div className="flex justify-center py-10"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-600"></div></div>
                             ) : reservations.length === 0 ? (
                                 <div className="text-center py-12">
                                     <UserGroupIcon className="h-12 w-12 text-gray-200 mx-auto mb-2" />
-                                    <p className="text-gray-500 font-medium">Ninguém presenteou este item ainda.</p>
+                                    <p className="text-gray-500 font-medium">Ainda sem contribuições.</p>
                                 </div>
                             ) : (
                                 <div className="space-y-4">
                                     {reservations.map((res: any, idx: number) => (
-                                        <div key={idx} className="bg-gray-50 p-5 rounded-3xl border border-gray-100 hover:border-rose-100 transition-colors">
+                                        <div key={idx} className="bg-gray-50 p-5 rounded-3xl border border-gray-100 shadow-sm">
                                             <div className="flex justify-between items-start mb-3">
                                                 <div>
-                                                    <span className="block font-black text-gray-800 text-lg leading-tight">{res.nomeConvidado}</span>
-                                                    <div className="flex items-center gap-1 text-gray-400 mt-1">
+                                                    <span className="block font-black text-gray-800 text-lg">{res.nomeConvidado}</span>
+                                                    <div className="flex items-center gap-1 text-gray-400 text-[10px] font-bold uppercase tracking-tighter">
                                                         <CalendarIcon className="h-3 w-3" />
-                                                        <span className="text-[10px] font-bold uppercase tracking-tighter">
-                                                            {new Date(res.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
-                                                        </span>
+                                                        {new Date(res.createdAt).toLocaleDateString('pt-BR')}
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <span className="block text-rose-600 font-black text-sm">R$ {res.valorPago.toLocaleString('pt-BR')}</span>
-                                                    <span className="text-[10px] bg-rose-100 text-rose-600 px-2 py-0.5 rounded-full font-black uppercase">
+                                                    <span className="block text-rose-600 font-black">R$ {res.valorPago.toLocaleString('pt-BR')}</span>
+                                                    <span className="text-[9px] bg-rose-100 text-rose-600 px-2 py-0.5 rounded-full font-black uppercase">
                                                         {res.quantidadeCotas} {res.quantidadeCotas > 1 ? 'cotas' : 'cota'}
                                                     </span>
                                                 </div>
                                             </div>
                                             {res.mensagem && (
-                                                <div className="relative group">
-                                                    <div className="flex gap-2 text-sm text-gray-600 italic bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
-                                                        <ChatBubbleLeftEllipsisIcon className="h-5 w-5 text-rose-300 shrink-0" />
-                                                        <p className="leading-relaxed">"{res.mensagem}"</p>
-                                                    </div>
+                                                <div className="flex gap-2 text-sm text-gray-600 italic bg-white p-3 rounded-2xl border border-gray-100">
+                                                    <ChatBubbleLeftEllipsisIcon className="h-4 w-4 text-rose-300 shrink-0" />
+                                                    <p>"{res.mensagem}"</p>
                                                 </div>
                                             )}
                                         </div>
@@ -313,29 +350,30 @@ const AdminGiftsPage: React.FC = () => {
                 </div>
             )}
 
-            {/* Outros Modais (Viewing e AddGiftModal) permanecem iguais... */}
+            {/* MODAL DE VISUALIZAÇÃO RÁPIDA */}
             {viewingGift && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
                     <div className="bg-white rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl">
                         <div className="relative h-64">
                             <img src={viewingGift.imagemUrl || 'https://via.placeholder.com/400'} className="w-full h-full object-cover" alt="" />
-                            <button onClick={() => setViewingGift(null)} className="absolute top-4 right-4 bg-black/20 hover:bg-black/40 p-2 rounded-full text-white transition-all">
+                            <button onClick={() => setViewingGift(null)} className="absolute top-4 right-4 bg-black/20 hover:bg-black/40 p-2 rounded-full text-white">
                                 <XMarkIcon className="h-6 w-6" />
                             </button>
                         </div>
-                        <div className="p-8">
-                            <h3 className="text-2xl font-black text-gray-900 mb-4">{viewingGift.nome}</h3>
-                            <div className="space-y-4 text-sm">
-                                <div className="flex justify-between border-b border-gray-50 pb-3">
-                                    <span className="text-gray-500 font-medium">Valor Total</span>
-                                    <span className="font-black text-gray-900 text-lg">R$ {viewingGift.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                        <div className="p-8 text-center">
+                            <h3 className="text-2xl font-black text-gray-900 mb-2">{viewingGift.nome}</h3>
+                            <p className="text-gray-500 mb-6 px-4 leading-relaxed">{viewingGift.descricao || 'Sem descrição cadastrada.'}</p>
+                            <div className="flex gap-4">
+                                <div className="flex-1 bg-gray-50 p-4 rounded-2xl border border-gray-100 text-center">
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Valor</p>
+                                    <p className="font-black text-gray-900 leading-none">R$ {viewingGift.valorTotal.toLocaleString('pt-BR')}</p>
                                 </div>
-                                <div className="flex justify-between border-b border-gray-50 pb-3">
-                                    <span className="text-gray-500 font-medium">Cotas Reservadas</span>
-                                    <span className="font-black text-rose-600 text-lg">{viewingGift.cotasVendidas || 0} de {viewingGift.totalCotas}</span>
+                                <div className="flex-1 bg-gray-50 p-4 rounded-2xl border border-gray-100 text-center">
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</p>
+                                    <p className="font-black text-rose-600 leading-none">{viewingGift.cotasVendidas}/{viewingGift.totalCotas}</p>
                                 </div>
                             </div>
-                            <button onClick={() => setViewingGift(null)} className="w-full mt-8 bg-gray-900 text-white py-4 rounded-2xl font-bold">Voltar</button>
+                            <button onClick={() => setViewingGift(null)} className="w-full mt-6 bg-gray-900 text-white py-4 rounded-2xl font-bold">Fechar Visualização</button>
                         </div>
                     </div>
                 </div>
