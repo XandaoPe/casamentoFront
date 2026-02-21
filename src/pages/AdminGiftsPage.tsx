@@ -11,12 +11,13 @@ import {
     PhotoIcon,
     UserGroupIcon,
     ChatBubbleLeftEllipsisIcon,
-    CurrencyDollarIcon,
     ChartPieIcon,
     ArrowTrendingUpIcon,
     CalendarIcon,
     ChevronDownIcon,
-    CheckBadgeIcon
+    CheckBadgeIcon,
+    BanknotesIcon,
+    ClockIcon
 } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
@@ -55,27 +56,57 @@ const AdminGiftsPage: React.FC = () => {
         if (gifts.length === 0) return {
             totalArrecadado: 0,
             metaTotal: 0,
+            valorTotalCotas: 0,
+            valorRestanteCotas: 0,
             presentesFinalizados: 0,
             totalCotasVendidas: 0,
             progresso: 0
         };
 
-        const totalArrecadado = gifts.reduce((acc, gift) => {
-            const valorCota = gift.valorTotal / gift.totalCotas;
-            return acc + (valorCota * (gift.cotasVendidas || 0));
-        }, 0);
+        let totalArrecadado = 0;
+        let metaTotal = 0;
+        let valorTotalCotas = 0;
+        let presentesFinalizados = 0;
+        let totalCotasVendidas = 0;
 
-        const metaTotal = gifts.reduce((acc, gift) => acc + (gift.valorTotal || 0), 0);
+        gifts.forEach(gift => {
+            const total = gift.valorTotal || 0;
+            const vendidas = gift.cotasVendidas || 0;
+            const totalDeCotas = gift.totalCotas || 1;
+            const valorCota = total / totalDeCotas;
 
-        // Presentes que foram 100% completados
-        const presentesFinalizados = gifts.filter(g => g.cotasVendidas >= g.totalCotas).length;
+            // 1. Acumula Meta Total Geral
+            metaTotal += total;
 
-        // Total bruto de cotas de todos os presentes
-        const totalCotasVendidas = gifts.reduce((acc, gift) => acc + (gift.cotasVendidas || 0), 0);
+            // 2. Acumula Total Arrecadado (Baseado nas cotas pagas)
+            totalArrecadado += (valorCota * vendidas);
 
+            // 3. Valor Total apenas de presentes que possuem cotas (totalCotas > 1)
+            if (totalDeCotas > 1) {
+                valorTotalCotas += total;
+            }
+
+            // 4. Contagem de Finalizados
+            if (vendidas >= totalDeCotas) {
+                presentesFinalizados++;
+            }
+
+            // 5. Total de cotas vendidas (volume)
+            totalCotasVendidas += vendidas;
+        });
+
+        const valorRestanteCotas = metaTotal - totalArrecadado;
         const progresso = metaTotal > 0 ? (totalArrecadado / metaTotal) * 100 : 0;
 
-        return { totalArrecadado, metaTotal, presentesFinalizados, totalCotasVendidas, progresso };
+        return {
+            totalArrecadado,
+            metaTotal,
+            valorTotalCotas,
+            valorRestanteCotas,
+            presentesFinalizados,
+            totalCotasVendidas,
+            progresso
+        };
     }, [gifts]);
 
     const handleEditClick = (gift: any) => {
@@ -135,43 +166,58 @@ const AdminGiftsPage: React.FC = () => {
                     </button>
                 </div>
 
-                {/* --- SEÇÃO DASHBOARD REESTRUTURADA --- */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                    {/* Card: Saldo Real */}
-                    <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
-                        <p className="text-[10px] font-black uppercase text-emerald-600 tracking-widest mb-1">Total Arrecadado</p>
-                        <h3 className="text-2xl font-black text-gray-900">
+                {/* --- SEÇÃO DASHBOARD ATUALIZADA COM NOVOS CARDS --- */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
+
+                    {/* Card 1: Valor Total das Cotas */}
+                    <div className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm">
+                        <div className="flex items-center gap-2 mb-1">
+                            <BanknotesIcon className="h-4 w-4 text-blue-500" />
+                            <p className="text-[10px] font-black uppercase text-blue-600 tracking-widest">Total em Cotas</p>
+                        </div>
+                        <h3 className="text-xl font-black text-gray-900">
+                            R$ {stats.valorTotalCotas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </h3>
+                        <p className="text-[10px] text-gray-400 mt-2 font-bold uppercase tracking-tighter">Soma de itens fracionados</p>
+                    </div>
+
+                    {/* Card 2: Valor Arrecadado (Já existia) */}
+                    <div className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm border-l-4 border-l-emerald-500">
+                        <p className="text-[10px] font-black uppercase text-emerald-600 tracking-widest mb-1">Valor Recebido</p>
+                        <h3 className="text-xl font-black text-gray-900">
                             R$ {stats.totalArrecadado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </h3>
-                        <p className="text-[10px] text-gray-400 mt-2 font-bold uppercase tracking-tighter">Meta: R$ {stats.metaTotal.toLocaleString('pt-BR')}</p>
+                        <p className="text-[10px] text-gray-400 mt-2 font-bold uppercase tracking-tighter italic">Dinheiro em caixa</p>
                     </div>
 
-                    {/* Card: Presentes Reais (Finalizados) */}
-                    <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group">
-                        <div className="absolute -right-2 -top-2 text-rose-50 opacity-20 group-hover:scale-110 transition-transform">
-                            <CheckBadgeIcon className="h-20 w-20" />
+                    {/* Card 3: Valor Restante (Faltantes) */}
+                    <div className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm">
+                        <div className="flex items-center gap-2 mb-1">
+                            <ClockIcon className="h-4 w-4 text-rose-500" />
+                            <p className="text-[10px] font-black uppercase text-rose-600 tracking-widest">Restante</p>
                         </div>
-                        <p className="text-[10px] font-black uppercase text-rose-600 tracking-widest mb-1">Itens Completos</p>
-                        <h3 className="text-2xl font-black text-gray-900">{stats.presentesFinalizados}</h3>
-                        <p className="text-[10px] text-gray-400 mt-2 font-bold uppercase tracking-tighter italic">Presentes 100% pagos</p>
+                        <h3 className="text-xl font-black text-gray-900">
+                            R$ {stats.valorRestanteCotas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </h3>
+                        <p className="text-[10px] text-gray-400 mt-2 font-bold uppercase tracking-tighter italic">Aguardando presente</p>
                     </div>
 
-                    {/* Card: Total de Cotas (Fluxo) */}
-                    <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
-                        <p className="text-[10px] font-black uppercase text-blue-600 tracking-widest mb-1">Cotas Recebidas</p>
-                        <h3 className="text-2xl font-black text-gray-900">{stats.totalCotasVendidas}</h3>
-                        <p className="text-[10px] text-gray-400 mt-2 font-bold uppercase tracking-tighter italic">Participações totais</p>
+                    {/* Card 4: Cotas Recebidas (Volume) */}
+                    <div className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm">
+                        <p className="text-[10px] font-black uppercase text-purple-600 tracking-widest mb-1">Participações</p>
+                        <h3 className="text-xl font-black text-gray-900">{stats.totalCotasVendidas}</h3>
+                        <p className="text-[10px] text-gray-400 mt-2 font-bold uppercase tracking-tighter italic">Cotas totais vendidas</p>
                     </div>
 
-                    {/* Card: % de Conclusão */}
-                    <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
-                        <p className="text-[10px] font-black uppercase text-amber-600 tracking-widest mb-1">Progresso Geral</p>
+                    {/* Card 5: % de Conclusão */}
+                    <div className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm">
+                        <p className="text-[10px] font-black uppercase text-amber-600 tracking-widest mb-1">Progresso Meta</p>
                         <div className="flex items-center gap-2">
-                            <h3 className="text-2xl font-black text-gray-900">{stats.progresso.toFixed(1)}%</h3>
-                            <ArrowTrendingUpIcon className="h-5 w-5 text-amber-500" />
+                            <h3 className="text-xl font-black text-gray-900">{stats.progresso.toFixed(1)}%</h3>
+                            <ArrowTrendingUpIcon className="h-4 w-4 text-amber-500" />
                         </div>
                         <div className="w-full bg-gray-100 h-1.5 rounded-full mt-3">
-                            <div className="bg-amber-500 h-full rounded-full" style={{ width: `${stats.progresso}%` }} />
+                            <div className="bg-amber-500 h-full rounded-full transition-all duration-1000" style={{ width: `${stats.progresso}%` }} />
                         </div>
                     </div>
                 </div>
@@ -185,8 +231,8 @@ const AdminGiftsPage: React.FC = () => {
                         <div className="flex items-center gap-3">
                             <ChartPieIcon className="h-6 w-6 text-blue-500" />
                             <div className="text-left">
-                                <h3 className="font-bold text-gray-800">Detalhamento por Cotas</h3>
-                                <p className="text-xs text-gray-400">Acompanhe o preenchimento de cada item</p>
+                                <h3 className="font-bold text-gray-800">Detalhamento por Itens</h3>
+                                <p className="text-xs text-gray-400">Acompanhe o preenchimento de cada presente</p>
                             </div>
                         </div>
                         <ChevronDownIcon className={`h-5 w-5 text-gray-400 transition-transform duration-300 ${isAccordionOpen ? 'rotate-180' : ''}`} />
