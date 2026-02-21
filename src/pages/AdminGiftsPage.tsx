@@ -109,6 +109,24 @@ const AdminGiftsPage: React.FC = () => {
         };
     }, [gifts]);
 
+    const handleDeleteReservation = async (reservationId: string) => {
+        if (!window.confirm('Deseja realmente excluir esta participação? As cotas retornarão ao presente.')) return;
+
+        try {
+            await api.delete(`/gifts/reservation/admin/${reservationId}`);
+            toast.success('Participação removida!');
+
+            // Atualiza a lista de nomes no modal
+            const response = await api.get(`/gifts/${selectedGift._id}/reservations`);
+            setReservations(response.data);
+
+            // Atualiza a lista principal para refletir a devolução das cotas no progresso
+            loadGifts();
+        } catch (error) {
+            toast.error('Erro ao excluir participação');
+        }
+    };
+
     const handleEditClick = (gift: any) => {
         setSelectedGift(gift);
         setIsModalOpen(true);
@@ -345,7 +363,7 @@ const AdminGiftsPage: React.FC = () => {
                                 <h3 className="text-xl font-black text-gray-900">Histórico de Carinho</h3>
                                 <p className="text-xs font-bold text-rose-500 uppercase tracking-widest">{selectedGift?.nome}</p>
                             </div>
-                            <button onClick={() => setShowBuyersModal(false)} className="bg-white p-2 rounded-full shadow-sm hover:bg-gray-100 transition-all">
+                            <button onClick={() => setShowBuyersModal(false)} className="bg-white p-2 rounded-full shadow-sm hover:bg-gray-100">
                                 <XMarkIcon className="h-6 w-6 text-gray-600" />
                             </button>
                         </div>
@@ -363,18 +381,30 @@ const AdminGiftsPage: React.FC = () => {
                                     {reservations.map((res: any, idx: number) => (
                                         <div key={idx} className="bg-gray-50 p-5 rounded-3xl border border-gray-100 shadow-sm">
                                             <div className="flex justify-between items-start mb-3">
-                                                <div>
+                                                <div className="flex-1">
                                                     <span className="block font-black text-gray-800 text-lg">{res.nomeConvidado}</span>
                                                     <div className="flex items-center gap-1 text-gray-400 text-[10px] font-bold uppercase tracking-tighter">
                                                         <CalendarIcon className="h-3 w-3" />
                                                         {new Date(res.createdAt).toLocaleDateString('pt-BR')}
                                                     </div>
                                                 </div>
-                                                <div className="text-right">
-                                                    <span className="block text-rose-600 font-black">R$ {res.valorPago.toLocaleString('pt-BR')}</span>
-                                                    <span className="text-[9px] bg-rose-100 text-rose-600 px-2 py-0.5 rounded-full font-black uppercase">
-                                                        {res.quantidadeCotas} {res.quantidadeCotas > 1 ? 'cotas' : 'cota'}
-                                                    </span>
+
+                                                <div className="flex flex-col items-end gap-2">
+                                                    <div className="text-right">
+                                                        <span className="block text-rose-600 font-black">R$ {res.valorPago.toLocaleString('pt-BR')}</span>
+                                                        <span className="text-[9px] bg-rose-100 text-rose-600 px-2 py-0.5 rounded-full font-black uppercase">
+                                                            {res.quantidadeCotas} {res.quantidadeCotas > 1 ? 'cotas' : 'cota'}
+                                                        </span>
+                                                    </div>
+
+                                                    {/* ÍCONE DE LIXEIRA PARA O ADMIN */}
+                                                    <button
+                                                        onClick={() => handleDeleteReservation(res._id)}
+                                                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
+                                                        title="Excluir erro do usuário"
+                                                    >
+                                                        <TrashIcon className="h-5 w-5" />
+                                                    </button>
                                                 </div>
                                             </div>
                                             {res.mensagem && (
@@ -390,7 +420,7 @@ const AdminGiftsPage: React.FC = () => {
                         </div>
 
                         <div className="p-6 border-t bg-gray-50/50">
-                            <button onClick={() => setShowBuyersModal(false)} className="w-full bg-gray-900 text-white py-4 rounded-2xl font-bold shadow-lg hover:bg-black transition-all">Fechar Lista</button>
+                            <button onClick={() => setShowBuyersModal(false)} className="w-full bg-gray-900 text-white py-4 rounded-2xl font-bold">Fechar Lista</button>
                         </div>
                     </div>
                 </div>

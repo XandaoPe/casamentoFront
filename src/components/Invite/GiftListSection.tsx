@@ -1,35 +1,23 @@
-// src/components/Invite/GiftListSection.tsx
 import React, { useState } from 'react';
-import { PresenteCota } from '../../types/invite.types';
 import { GiftIcon, XMarkIcon, ChevronRightIcon, ChevronLeftIcon } from '@heroicons/react/24/outline';
 
 interface GiftListSectionProps {
-    presentes: PresenteCota[];
-    // Atualizado para enviar os novos campos exigidos pelo backend
+    presentes: any[];
+    guestName: string;
     onComprarCota?: (giftId: string, quantidade: number, nome: string, mensagem: string) => void;
 }
 
-const GiftListSection: React.FC<GiftListSectionProps> = ({ presentes, onComprarCota }) => {
+const GiftListSection: React.FC<GiftListSectionProps> = ({ presentes, guestName, onComprarCota }) => {
     const [selectedGift, setSelectedGift] = useState<any | null>(null);
     const [step, setStep] = useState(1); // 1: Cotas, 2: Identificação
     const [quantidade, setQuantidade] = useState(1);
-    const [nome, setNome] = useState('');
     const [mensagem, setMensagem] = useState('');
 
     const handleConfirmarFinal = () => {
-        if (!nome.trim()) {
-            alert("Por favor, informe seu nome para os noivos.");
-            return;
-        }
-
         if (selectedGift && onComprarCota) {
-            onComprarCota(selectedGift._id, quantidade, nome, mensagem);
-            // Resetar estados
-            setSelectedGift(null);
-            setStep(1);
-            setQuantidade(1);
-            setNome('');
-            setMensagem('');
+            // Enviamos o guestName que veio via props automaticamente
+            onComprarCota(selectedGift._id, quantidade, guestName, mensagem);
+            fecharModal();
         }
     };
 
@@ -37,7 +25,6 @@ const GiftListSection: React.FC<GiftListSectionProps> = ({ presentes, onComprarC
         setSelectedGift(null);
         setStep(1);
         setQuantidade(1);
-        setNome('');
         setMensagem('');
     };
 
@@ -105,10 +92,10 @@ const GiftListSection: React.FC<GiftListSectionProps> = ({ presentes, onComprarC
                     })}
                 </div>
 
-                {/* MODAL EVOLUÍDO */}
+                {/* MODAL */}
                 {selectedGift && (
                     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
-                        <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl animate-slide-up">
+                        <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl">
                             <div className="flex justify-between items-center mb-6">
                                 <div className="flex items-center gap-2">
                                     {step === 2 && (
@@ -161,14 +148,12 @@ const GiftListSection: React.FC<GiftListSectionProps> = ({ presentes, onComprarC
                             ) : (
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="block text-sm font-bold text-gray-700 mb-1">Seu Nome Completo</label>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">Seu Nome</label>
                                         <input
                                             type="text"
-                                            value={nome}
-                                            onChange={(e) => setNome(e.target.value)}
-                                            placeholder="Ex: João e Maria Silva"
-                                            className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gold focus:outline-none"
-                                            autoFocus
+                                            readOnly
+                                            value={guestName}
+                                            className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-500 cursor-not-allowed"
                                         />
                                     </div>
                                     <div>

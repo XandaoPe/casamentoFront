@@ -45,3 +45,16 @@ export interface ConfirmacaoEstendida {
         bebida?: string;
     };
 }
+
+export interface MinhaReserva {
+    _id: string;
+    nomeConvidado: string;
+    quantidadeCotas: number;
+    valorPago: number;
+    giftId: {
+        _id: string;
+        nome: string;
+        imagemUrl: string;
+    };
+    createdAt: string;
+}

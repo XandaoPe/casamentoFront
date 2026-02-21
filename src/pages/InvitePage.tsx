@@ -1,12 +1,11 @@
-// src/pages/InvitePage.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import api from '../services/api';
 import { Guest } from '../types/guest.types';
-import { PresenteCota, CardapioItem } from '../types/invite.types';
+import { PresenteCota, CardapioItem, MinhaReserva } from '../types/invite.types';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
-import { CheckCircleIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon, InformationCircleIcon, TrashIcon, GiftIcon } from '@heroicons/react/24/outline';
 
 import HeroSection from '../components/Invite/HeroSection';
 import CountdownSection from '../components/Invite/CountdownSection';
@@ -25,6 +24,9 @@ const InvitePage: React.FC = () => {
     const [presentes, setPresentes] = useState<PresenteCota[]>([]);
     const [cardapio, setCardapio] = useState<CardapioItem[]>([]);
 
+    // NOVO ESTADO: Armazena a lista de presentes escolhidos pelo convidado
+    const [minhasEscolhas, setMinhasEscolhas] = useState<MinhaReserva[]>([]);
+
     const EVENT_DATE = "2026-11-21T19:00:00";
 
     useEffect(() => {
@@ -39,17 +41,29 @@ const InvitePage: React.FC = () => {
         return () => clearTimeout(timer);
     }, [loading]);
 
+    // FUNÇÃO PARA BUSCAR OS PRESENTES ESCOLHIDOS
+    const loadMyReservations = useCallback(async (guestId: string) => {
+        try {
+            const response = await api.get(`/gifts/reservations/by-guest/${guestId}`);
+            setMinhasEscolhas(response.data);
+        } catch (error) {
+            console.error("Erro ao carregar reservas:", error);
+        }
+    }, []);
+
     const loadInvite = useCallback(async () => {
         if (!token) return;
         try {
             const response = await api.get(`/guests/invite/${token}`);
             setGuest(response.data);
+            // Busca pelo ID único do MongoDB
+            loadMyReservations(response.data._id);
         } catch (error) {
             toast.error('Convite não encontrado');
         } finally {
             setLoading(false);
         }
-    }, [token]);
+    }, [token, loadMyReservations]);
 
     const loadGifts = useCallback(async () => {
         try {
@@ -80,7 +94,6 @@ const InvitePage: React.FC = () => {
             toast.error('Token inválido');
             return;
         }
-
         try {
             await api.post(`/guests/confirm/${token}`, data);
             toast.success('Presença confirmada com sucesso! 🎉');
@@ -90,30 +103,33 @@ const InvitePage: React.FC = () => {
         }
     };
 
-    // FUNÇÃO ATUALIZADA: Recebe os dados do componente GiftListSection
     const handleBuyGift = async (giftId: string, quantidade: number, nome: string, mensagem: string) => {
-        const qtdFinal = Number(quantidade) || 1;
-
-        if (!giftId) {
-            toast.error('ID do presente inválido');
-            return;
-        }
-
         try {
-            // Agora enviamos o nome e a mensagem que o backend exige
-            const response = await api.post('/gifts/buy', {
+            await api.post('/gifts/buy', {
                 giftId,
-                quantidade: qtdFinal,
-                nome,
+                guestId: guest?._id, // Enviando ID absoluto
+                quantidade,
+                nome: guest?.nome, // Nome oficial do banco
                 mensagem
             });
-
-            toast.success('Ótima escolha! Obrigado pelo presente! 🎁');
-
-            // Recarrega a lista para atualizar as cotas vendidas visualmente
+            toast.success('Obrigado pelo presente! 🎁');
             loadGifts();
+            if (guest) loadMyReservations(guest._id);
         } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Erro ao selecionar presente');
+            toast.error('Erro ao processar presente');
+        }
+    };
+
+    // FUNÇÃO PARA EXCLUIR UM PRESENTE ESCOLHIDO
+    const handleDeleteChoice = async (reservationId: string) => {
+        if (!window.confirm('Deseja remover este item da sua lista de presentes?')) return;
+        try {
+            await api.delete(`/gifts/reservation/guest/${reservationId}`);
+            toast.success('Item removido com sucesso');
+            loadGifts(); // Atualiza o estoque geral
+            if (guest?._id) loadMyReservations(guest._id); // CORREÇÃO: Usar _id em vez de nome
+        } catch (error) {
+            toast.error('Erro ao remover item');
         }
     };
 
@@ -177,23 +193,69 @@ const InvitePage: React.FC = () => {
 
             <MenuSection items={cardapio} isSelectable={false} onSelect={() => { }} />
 
-            {/* COMPONENTE CONECTADO COM A NOVA FUNÇÃO */}
+            {/* NOVA SEÇÃO: LISTA DE PRESENTES ESCOLHIDOS PELO CONVIDADO */}
+            {minhasEscolhas.length > 0 && (
+                <section className="py-12 bg-rose-50/50 border-y border-rose-100">
+                    <div className="container-custom max-w-2xl px-4">
+                        <div className="text-center mb-8">
+                            <GiftIcon className="h-8 w-8 text-rose-500 mx-auto mb-2" />
+                            <h2 className="text-2xl font-black text-gray-800 uppercase tracking-tight">
+                                Minhas Escolhas
+                            </h2>
+                            <p className="text-sm text-gray-500 italic">Itens que você selecionou:</p>
+                        </div>
+
+                        <div className="grid gap-4">
+                            {minhasEscolhas.map((item) => (
+                                <div key={item._id} className="bg-white p-4 rounded-2xl border border-rose-100 shadow-sm flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-14 h-14 rounded-xl bg-gray-50 overflow-hidden flex-shrink-0 border">
+                                            {item.giftId?.imagemUrl ? (
+                                                <img src={item.giftId.imagemUrl} alt="" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <GiftIcon className="w-6 h-6 m-4 text-rose-200" />
+                                            )}
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-gray-800">
+                                                {item.giftId?.nome || 'Presente'}
+                                            </h4>
+                                            <p className="text-xs text-gray-500">
+                                                {item.quantidadeCotas} {item.quantidadeCotas > 1 ? 'cotas' : 'cota'} • R$ {item.valorPago.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => handleDeleteChoice(item._id)}
+                                        className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                                        title="Excluir escolha"
+                                    >
+                                        <TrashIcon className="h-5 w-5" />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            )}
+
             <GiftListSection
                 presentes={presentes}
                 onComprarCota={handleBuyGift}
+                guestName={guest.nome}
             />
 
             <section className="py-16 bg-rose-50">
                 <div className="container-custom max-w-2xl">
-                    <h2 className="font-script text-3xl md:text-4xl text-center mb-8">
+                    <h2 className="font-script text-3xl md:text-4xl text-center mb-8 text-rose-800">
                         Confirme sua Presença
                     </h2>
 
                     {guest.confirmado ? (
-                        <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+                        <div className="bg-white rounded-3xl shadow-xl p-10 text-center border-2 border-green-50">
                             <CheckCircleIcon className="h-16 w-16 text-green-500 mx-auto mb-4" />
-                            <h3 className="text-2xl font-semibold text-green-700 mb-2">Presença Confirmada!</h3>
-                            <p className="text-gray-600">Te esperamos lá! 🎉</p>
+                            <h3 className="text-2xl font-bold text-green-700 mb-2">Presença Confirmada!</h3>
+                            <p className="text-gray-600">Ficamos muito felizes que você virá! 🎉</p>
                         </div>
                     ) : (
                         <ConfirmationForm onSubmit={handleConfirmPresence} />
