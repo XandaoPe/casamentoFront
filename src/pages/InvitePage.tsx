@@ -172,14 +172,14 @@ const InvitePage: React.FC = () => {
     const ceremony = {
         name: 'Igreja do Evangelho Quadrangular',
         address: 'Rua Minas Gerais, 14-50 - Vila Cruzeiro do Sul, Presidente Epitácio-SP',
-        mapUrl: 'https://maps.google.com',
+        mapUrl: 'https://maps.app.goo.gl/3sRArpq8J6bd4iED9',
         time: '19:00'
     };
 
     const party = {
         name: 'Espaço Planet/Planet Kids',
         address: 'Av. Presidente Vargas, 27-07 - Vila Centenario, Presidente Epitácio-SP',
-        mapUrl: 'https://maps.google.com',
+        mapUrl: 'https://maps.app.goo.gl/1bTAcLs76SXuJig29',
         time: '20:30'
     };
 
